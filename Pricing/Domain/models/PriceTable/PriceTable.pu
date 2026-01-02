@@ -1,0 +1,17 @@
+@startuml PriceTable
+
+!include ./PriceRule/PriceRule.pu
+
+class "PriceTable(料金表)" as PriceTable << (R,red) RootEntity >> {
+  PriceRules: PriceRule[*]
+}
+
+PriceTable *-down- PriceRule
+
+note right of PriceTable
+  - 料金表(ルール)は永続化対象
+  - 見積(Estimate)は永続化しない
+  - 見積結果は PricingPolicy(章11でドメインサービス) が PriceRules から算出して返す
+end note
+
+@enduml

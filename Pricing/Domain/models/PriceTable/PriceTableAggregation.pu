@@ -1,0 +1,8 @@
+@startuml PriceTableAggregation
+title 料金表集約 (PriceTable Aggregation)
+
+package "料金表集約(PriceTableAggregation)" {
+  !include ./PriceTable.pu
+}
+
+@enduml

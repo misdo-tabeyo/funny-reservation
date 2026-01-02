@@ -1,0 +1,5 @@
+@startuml Name
+class "Name(名前)" as Name <<ValueObject>> {
+  + value: string
+}
+@enduml

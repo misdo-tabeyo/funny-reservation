@@ -1,0 +1,5 @@
+@startuml MenuId
+class "MenuId" as MenuId <<ValueObject>> {
+  + value: string
+}
+@enduml

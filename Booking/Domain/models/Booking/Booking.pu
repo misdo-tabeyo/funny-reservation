@@ -1,0 +1,47 @@
+@startuml Booking
+
+!include ./BookingId/BookingId.pu
+!include ./Name/Name.pu
+!include ./PhoneNumber/PhoneNumber.pu
+!include ./CarId/CarId.pu
+!include ./MenuId/MenuId.pu
+!include ./OptionId/OptionId.pu
+!include ./TimeRange/TimeRange.pu
+!include ./BookingStatus/BookingStatus.pu
+!include ./Money/Money.pu
+
+class "Booking(予約)" as Booking << (R,red) RootEntity >> {
+  + bookingId: BookingId
+  + customerName: Name
+  + phoneNumber: PhoneNumber
+  + carId: CarId
+  + menuId: MenuId
+  + optionIds: OptionId[*]
+  + timeRange: TimeRange
+  + status: BookingStatus
+  + price: Money
+}
+
+' 関係（Bookingが内包するVO）
+Booking *-- BookingId
+Booking *-- Name
+Booking *-- PhoneNumber
+Booking *-- TimeRange
+Booking *-- Money
+Booking *-- BookingStatus
+
+' 関係（他コンテキストをID参照するVO）
+Booking --> CarId
+Booking --> MenuId
+Booking --> OptionId
+
+note right of Booking
+  - 仮予約は status = TEMPORARY
+  - 確定は status = CONFIRMED
+  - キャンセルは status = CANCELED
+  - Menu/Option はID参照（詳細は別コンテキスト）
+  - Menu/Option の duration は計算素材。
+    Booking は確定した timeRange を保持する。
+end note
+
+@enduml

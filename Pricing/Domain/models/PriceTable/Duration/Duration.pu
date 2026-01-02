@@ -1,0 +1,5 @@
+@startuml Duration
+class "Duration(所要時間)" as Duration <<ValueObject>> {
+  + minutes: number
+}
+@enduml

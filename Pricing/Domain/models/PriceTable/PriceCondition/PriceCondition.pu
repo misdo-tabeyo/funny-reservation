@@ -1,0 +1,23 @@
+@startuml PriceCondition
+
+!include ../CarId/CarId.pu
+!include ../MenuId/MenuId.pu
+!include ../OptionId/OptionId.pu
+
+class "PriceCondition(適用条件)" as PriceCondition <<ValueObject>> {
+  CarId: CarId?
+  MenuId: MenuId
+  OptionId: OptionId?
+}
+
+PriceCondition *-down- CarId
+PriceCondition *-down- MenuId
+PriceCondition *-down- OptionId
+
+note bottom of PriceCondition
+  - MenuId は必須（どのメニューのルールか）
+  - OptionId は任意（オプション料金ルールの場合のみ）
+  - CarId は任意（車種で料金/時間が変わる場合のみ）
+end note
+
+@enduml

@@ -1,0 +1,25 @@
+@startuml PriceRule
+
+!include ../PriceCondition/PriceCondition.pu
+!include ../Money/Money.pu
+!include ../Duration/Duration.pu
+!include ../Notes/Notes.pu
+
+class "PriceRule(料金ルール)" as PriceRule << (E,green) Entity >> {
+  Condition: PriceCondition
+  Price: Money
+  Duration: Duration
+  Notes: Notes
+}
+
+PriceRule *-down- PriceCondition
+PriceRule *-down- Money
+PriceRule *-down- Duration
+PriceRule *-down- Notes
+
+note bottom of PriceRule
+  - 1つのルールは「料金表の1行」想定
+  - 適用されたルールの Price/Duration/Notes を合成して見積結果にする
+end note
+
+@enduml

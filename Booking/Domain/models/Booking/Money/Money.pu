@@ -1,0 +1,6 @@
+@startuml Money
+class "Money(料金)" as Money <<ValueObject>> {
+  + amount: number
+  + currency: string
+}
+@enduml

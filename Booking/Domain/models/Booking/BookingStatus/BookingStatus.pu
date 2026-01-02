@@ -1,0 +1,7 @@
+@startuml BookingStatus
+enum "BookingStatus" as BookingStatus {
+  TEMPORARY
+  CONFIRMED
+  CANCELED
+}
+@enduml

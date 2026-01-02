@@ -1,0 +1,12 @@
+@startuml BookingId
+
+class "BookingId" as BookingId <<ValueObject>> {
+  + value: string
+}
+
+note bottom of BookingId
+  - 一意であること
+  - 文字列(UUIDなど)で表現する想定
+end note
+
+@enduml

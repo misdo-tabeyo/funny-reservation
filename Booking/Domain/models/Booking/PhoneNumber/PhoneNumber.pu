@@ -1,0 +1,5 @@
+@startuml PhoneNumber
+class "PhoneNumber(電話番号)" as PhoneNumber <<ValueObject>> {
+  + value: string
+}
+@enduml

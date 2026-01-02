@@ -1,0 +1,24 @@
+@startuml TimeRange
+
+!include ./DateTime/DateTime.pu
+!include ./Duration/Duration.pu
+
+class "TimeRange(時間帯)" as TimeRange <<ValueObject>> {
+  + startAt: DateTime
+  + endAt: DateTime
+  --
+  + duration(): Duration
+  + overlaps(other: TimeRange): boolean
+  + contains(at: DateTime): boolean
+}
+
+TimeRange *-- DateTime
+TimeRange *-- Duration
+
+note right of TimeRange
+  不変条件の例:
+  - startAt < endAt
+  - overlaps判定は [start, end) の半開区間で統一すると安全
+end note
+
+@enduml

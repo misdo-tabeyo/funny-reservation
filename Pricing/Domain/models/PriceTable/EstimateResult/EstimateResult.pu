@@ -1,0 +1,22 @@
+@startuml EstimateResult
+
+!include ../Money/Money.pu
+!include ../Duration/Duration.pu
+!include ../Notes/Notes.pu
+
+class "EstimateResult(見積結果)" as EstimateResult <<ValueObject>> {
+  Price: Money
+  Duration: Duration
+  Notes: Notes
+}
+
+EstimateResult *-down- Money
+EstimateResult *-down- Duration
+EstimateResult *-down- Notes
+
+note right of EstimateResult
+  - 永続化しない（その場で返すだけ）
+  - 予約に進む際は Booking に price と timeRange を確定値として保存する
+end note
+
+@enduml

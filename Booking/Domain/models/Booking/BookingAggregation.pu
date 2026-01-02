@@ -1,0 +1,8 @@
+@startuml BookingAggregation
+title 予約集約 (Booking Aggregation)
+
+package "予約集約(BookingAggregation)" {
+  !include ./Booking.pu
+}
+
+@enduml

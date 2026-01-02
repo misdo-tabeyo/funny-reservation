@@ -1,0 +1,5 @@
+@startuml DateTime
+class "DateTime" as DateTime <<ValueObject>> {
+  + value: string
+}
+@enduml

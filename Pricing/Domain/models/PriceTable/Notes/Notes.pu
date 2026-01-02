@@ -1,0 +1,5 @@
+@startuml Notes
+class "Notes(注意事項)" as Notes <<ValueObject>> {
+  + values: string[*]
+}
+@enduml

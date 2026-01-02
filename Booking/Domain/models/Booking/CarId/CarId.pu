@@ -1,0 +1,5 @@
+@startuml CarId
+class "CarId" as CarId <<ValueObject>> {
+  + value: string
+}
+@enduml

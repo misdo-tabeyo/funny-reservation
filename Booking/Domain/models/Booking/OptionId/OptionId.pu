@@ -1,0 +1,5 @@
+@startuml OptionId
+class "OptionId" as OptionId <<ValueObject>> {
+  + value: string
+}
+@enduml
