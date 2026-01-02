@@ -1,0 +1,48 @@
+@startuml ContextMap
+title Context Map (Booking / Pricing)
+
+package "Booking Context" as BC_Booking {
+  class "Booking(予約)" as Booking
+  class "BookingId" as BookingId
+  class "TimeRange" as TimeRange
+  class "Money" as BookingMoney
+  class "CarId" as BookingCarId
+  class "MenuId" as BookingMenuId
+  class "OptionId" as BookingOptionId
+
+  Booking *-- BookingId
+  Booking *-- TimeRange
+  Booking *-- BookingMoney
+  Booking --> BookingCarId
+  Booking --> BookingMenuId
+  Booking --> BookingOptionId
+}
+
+package "Pricing Context" as BC_Pricing {
+  class "PriceTable(料金表)" as PriceTable
+  class "PriceRule(料金ルール)" as PriceRule
+  class "EstimateResult(見積結果)" as EstimateResult
+  class "Money" as PricingMoney
+  class "Duration" as PricingDuration
+  class "CarId" as PricingCarId
+  class "MenuId" as PricingMenuId
+  class "OptionId" as PricingOptionId
+
+  PriceTable "1" o-- "*" PriceRule
+  EstimateResult *-- PricingMoney
+  EstimateResult *-- PricingDuration
+  EstimateResult --> PricingCarId
+  EstimateResult --> PricingMenuId
+  EstimateResult --> PricingOptionId
+}
+
+BC_Booking ..> BC_Pricing : uses (Pricing Service)
+
+note on link
+  - BookingはPricingの内部ルールを知らない
+  - 予約作成時にPricingへ照会して
+    Money / Duration を取得し、Bookingに確定値として保存する
+  - 境界越えはDTO/文字列で受け渡し（ACL的に変換）
+end note
+
+@enduml
