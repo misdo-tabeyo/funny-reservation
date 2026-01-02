@@ -1,0 +1,25 @@
+@startuml BookingLifecycle
+title Booking Lifecycle (State Machine)
+
+state "TEMPORARY\n(仮予約)" as TEMPORARY
+state "CONFIRMED\n(確定)" as CONFIRMED
+state "CANCELED\n(キャンセル)" as CANCELED
+
+[*] --> TEMPORARY : CreateTemporaryBooking
+
+TEMPORARY --> CONFIRMED : ConfirmBooking\n(スタッフ承認)
+TEMPORARY --> CANCELED : CancelBooking\n(期限切れ/取り消し)
+
+CONFIRMED --> CANCELED : CancelBooking\n(顧客都合/店舗都合)
+
+note right of TEMPORARY
+  仮予約は時間枠を仮押さえする想定。
+  （実装方針により「仮押さえしない」も可）
+end note
+
+note right of CONFIRMED
+  確定後のTimeRange/Priceは
+  原則変更しない（変更するなら別ユースケース）
+end note
+
+@enduml
