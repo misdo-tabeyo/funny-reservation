@@ -6,8 +6,8 @@ import { OptionId } from './OptionId/OptionId';
 import { BookingStatus, BookingStatusEnum } from './BookingStatus/BookingStatus';
 import { TimeRange } from './TimeRange/TimeRange';
 import { Duration } from './TimeRange/Duration/Duration';
-import { DateTime } from '../../../Domain/models/shared/DateTime/DateTime';
-import { Money } from '../../../Domain/models/shared/Money/Money';
+import { DateTime } from 'Domain/models/shared/DateTime/DateTime';
+import { Money } from 'Domain/models/shared/Money/Money';
 
 describe('Booking', () => {
   const bookingId = new BookingId('bookingId_01');
@@ -59,6 +59,19 @@ describe('Booking', () => {
       expect(booking.optionIds[1].equals(option2)).toBeTruthy();
     });
 
+    it('optionIds が重複している場合はエラーを投げる', () => {
+      expect(() =>
+        Booking.create({
+          bookingId,
+          carId,
+          menuId,
+          optionIds: [option1, option1],
+          timeRange,
+          price,
+        }),
+      ).toThrow('optionIdsは重複を許可しません');
+    });
+
     it('getter で渡した VO / 値を取得できる', () => {
       const booking = Booking.create({
         bookingId,
@@ -94,6 +107,178 @@ describe('Booking', () => {
 
       expect(booking.status.equals(status)).toBeTruthy();
       expect(booking.status.isConfirmed).toBe(true);
+    });
+
+    it('optionIds が重複している場合はエラーを投げる', () => {
+      const status = BookingStatus.confirmed();
+
+      expect(() =>
+        Booking.reconstruct({
+          bookingId,
+          carId,
+          menuId,
+          optionIds: [option1, option1],
+          timeRange,
+          price,
+          status,
+        }),
+      ).toThrow('optionIdsは重複を許可しません');
+    });
+  });
+
+  describe('Draft のときだけ変更できる', () => {
+    it('Draft のとき changePrice() できる', () => {
+      const booking = Booking.create({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+      });
+
+      const next = new Money({ amount: 25000, currency: 'JPY' });
+      booking.changePrice(next);
+
+      expect(booking.price.equals(next)).toBeTruthy();
+    });
+
+    it('Confirmed のとき changePrice() できず例外', () => {
+      const booking = Booking.reconstruct({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+        status: BookingStatus.confirmed(),
+      });
+
+      const next = new Money({ amount: 25000, currency: 'JPY' });
+      expect(() => booking.changePrice(next)).toThrow('priceを変更できません（status=Confirmed）');
+    });
+
+    it('Draft のとき reschedule() できる', () => {
+      const booking = Booking.create({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+      });
+
+      const nextTimeRange = new TimeRange(
+        new DateTime('2026-01-04T01:00:00.000Z'),
+        new Duration(60),
+      );
+
+      booking.reschedule(nextTimeRange);
+
+      expect(booking.timeRange.equals(nextTimeRange)).toBeTruthy();
+    });
+
+    it('Confirmed のとき reschedule() できず例外', () => {
+      const booking = Booking.reconstruct({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+        status: BookingStatus.confirmed(),
+      });
+
+      const nextTimeRange = new TimeRange(
+        new DateTime('2026-01-04T01:00:00.000Z'),
+        new Duration(60),
+      );
+
+      expect(() => booking.reschedule(nextTimeRange)).toThrow(
+        'timeRangeを変更できません（status=Confirmed）',
+      );
+    });
+
+    it('Draft のとき carId / menuId / optionIds を変更できる', () => {
+      const booking = Booking.create({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+      });
+
+      const nextCarId = new CarId('carId_____02');
+      const nextMenuId = new MenuId('menuId____02');
+      const nextOptionIds = [option2];
+
+      booking.changeCarId(nextCarId);
+      booking.changeMenuId(nextMenuId);
+      booking.changeOptionIds(nextOptionIds);
+
+      expect(booking.carId.equals(nextCarId)).toBeTruthy();
+      expect(booking.menuId.equals(nextMenuId)).toBeTruthy();
+      expect(booking.optionIds).toHaveLength(1);
+      expect(booking.optionIds[0].equals(option2)).toBeTruthy();
+    });
+
+    it('Draft のとき changeOptionIds() は防御的コピーされ、外部の配列変更の影響を受けない', () => {
+      const booking = Booking.create({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+      });
+
+      const nextOptionIds = [option1, option2];
+      booking.changeOptionIds(nextOptionIds);
+
+      nextOptionIds.pop();
+
+      expect(booking.optionIds).toHaveLength(2);
+      expect(booking.optionIds[0].equals(option1)).toBeTruthy();
+      expect(booking.optionIds[1].equals(option2)).toBeTruthy();
+    });
+
+    it('Draft のとき changeOptionIds() で重複を渡すと例外', () => {
+      const booking = Booking.create({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+      });
+
+      expect(() => booking.changeOptionIds([option1, option1])).toThrow('optionIdsは重複を許可しません');
+    });
+
+    it('Confirmed のとき carId / menuId / optionIds を変更できず例外', () => {
+      const booking = Booking.reconstruct({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+        status: BookingStatus.confirmed(),
+      });
+
+      const nextCarId = new CarId('carId_____02');
+      const nextMenuId = new MenuId('menuId____02');
+
+      expect(() => booking.changeCarId(nextCarId)).toThrow(
+        'carIdを変更できません（status=Confirmed）',
+      );
+      expect(() => booking.changeMenuId(nextMenuId)).toThrow(
+        'menuIdを変更できません（status=Confirmed）',
+      );
+      expect(() => booking.changeOptionIds([option2])).toThrow(
+        'optionIdsを変更できません（status=Confirmed）',
+      );
     });
   });
 
