@@ -26,6 +26,22 @@ export class BookingStatus extends ValueObject<BookingStatusValue, 'BookingStatu
     super(value);
   }
 
+  static initial(): BookingStatus {
+    return new BookingStatus(BookingStatusEnum.Draft);
+  }
+  static draft(): BookingStatus {
+    return new BookingStatus(BookingStatusEnum.Draft);
+  }
+  static confirmed(): BookingStatus {
+    return new BookingStatus(BookingStatusEnum.Confirmed);
+  }
+  static cancelled(): BookingStatus {
+    return new BookingStatus(BookingStatusEnum.Cancelled);
+  }
+  static completed(): BookingStatus {
+    return new BookingStatus(BookingStatusEnum.Completed);
+  }
+
   protected validate(value: BookingStatusValue): void {
     if (!(value in BOOKING_STATUS_MAP)) {
       throw new Error('無効なBookingStatusです');
