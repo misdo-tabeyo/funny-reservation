@@ -1,25 +1,41 @@
 @startuml BookingLifecycle
 title Booking Lifecycle (State Machine)
 
-state "TEMPORARY\n(仮予約)" as TEMPORARY
-state "CONFIRMED\n(確定)" as CONFIRMED
-state "CANCELED\n(キャンセル)" as CANCELED
+state "Draft\n(下書き)" as DRAFT
+state "Confirmed\n(確定)" as CONFIRMED
+state "Cancelled\n(キャンセル)" as CANCELLED
+state "Completed\n(完了)" as COMPLETED
 
-[*] --> TEMPORARY : CreateTemporaryBooking
+[*] --> DRAFT : CreateBooking
 
-TEMPORARY --> CONFIRMED : ConfirmBooking\n(スタッフ承認)
-TEMPORARY --> CANCELED : CancelBooking\n(期限切れ/取り消し)
+DRAFT --> CONFIRMED : ConfirmBooking
+DRAFT --> CANCELLED : CancelBooking
 
-CONFIRMED --> CANCELED : CancelBooking\n(顧客都合/店舗都合)
+CONFIRMED --> COMPLETED : CompleteBooking
+CONFIRMED --> CANCELLED : CancelBooking
 
-note right of TEMPORARY
-  仮予約は時間枠を仮押さえする想定。
-  （実装方針により「仮押さえしない」も可）
+CANCELLED --> [*]
+COMPLETED --> [*]
+
+note right of DRAFT
+  - 作成直後は Draft
+  - Draft の間は内容変更が可能
+    （price/timeRange/menu/option/car など）
 end note
 
 note right of CONFIRMED
-  確定後のTimeRange/Priceは
-  原則変更しない（変更するなら別ユースケース）
+  - Confirmed は予約枠を確保した状態
+  - Confirmed 後は原則内容変更しない
+    （変更が必要な場合は別ユースケース）
+  - キャンセルは可能（Confirmed -> Cancelled）
+end note
+
+note right of CANCELLED
+  - 終端状態（ここから遷移しない）
+end note
+
+note right of COMPLETED
+  - 終端状態（ここから遷移しない）
 end note
 
 @enduml
