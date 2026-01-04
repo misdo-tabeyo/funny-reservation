@@ -8,7 +8,7 @@
 !include ./OptionId/OptionId.pu
 !include ./TimeRange/TimeRange.pu
 !include ./BookingStatus/BookingStatus.pu
-!include ./Money/Money.pu
+!include ../shared/Money/Money.pu
 
 class "Booking(予約)" as Booking << (R,red) RootEntity >> {
   + bookingId: BookingId

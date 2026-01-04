@@ -1,6 +1,6 @@
 @startuml EstimateResult
 
-!include ../Money/Money.pu
+!include ../../shared/Money/Money.pu
 !include ../Duration/Duration.pu
 !include ../Notes/Notes.pu
 
