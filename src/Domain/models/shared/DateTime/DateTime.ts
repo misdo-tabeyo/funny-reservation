@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { ValueObject } from './ValueObject';
+import { ValueObject } from '../ValueObject';
 
 dayjs.extend(utc);
 dayjs.extend(customParseFormat);

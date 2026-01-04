@@ -1,6 +1,6 @@
 @startuml TimeRange
 
-!include ./DateTime/DateTime.pu
+!include ../../shared/DateTime/DateTime.pu
 !include ./Duration/Duration.pu
 
 class "TimeRange(時間帯)" as TimeRange <<ValueObject>> {
