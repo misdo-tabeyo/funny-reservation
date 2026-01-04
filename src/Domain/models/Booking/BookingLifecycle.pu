@@ -21,6 +21,9 @@ note right of DRAFT
   - 作成直後は Draft
   - Draft の間は内容変更が可能
     （price/timeRange/menu/option/car など）
+  - Draft の段階でも「枠確保」のため
+    Googleカレンダー予定を作成してよい
+    （calendarEventId を保持）
 end note
 
 note right of CONFIRMED
@@ -28,10 +31,15 @@ note right of CONFIRMED
   - Confirmed 後は原則内容変更しない
     （変更が必要な場合は別ユースケース）
   - キャンセルは可能（Confirmed -> Cancelled）
+
+  - 確定後に「時間が増える変更」（剥がし追加・全面化・リア追加など）が必要な場合は
+    いったん NeedsReschedule 扱いとし、
+    Googleカレンダーで枠を確保してから反映する
 end note
 
 note right of CANCELLED
   - 終端状態（ここから遷移しない）
+  - Googleカレンダー予定が削除された場合も Cancelled 扱いにする（自動キャンセル）
 end note
 
 note right of COMPLETED

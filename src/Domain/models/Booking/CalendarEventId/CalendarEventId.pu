@@ -1,0 +1,13 @@
+@startuml CalendarEventId
+
+class "CalendarEventId(外部カレンダー予定ID)" as CalendarEventId {
+  + value: string
+}
+
+note bottom of CalendarEventId
+  - 外部カレンダー上の「予定」を識別するID
+  - Booking は CalendarEventId と 1:1 で対応する
+  - カレンダー実装（例: Google Calendar など）はドメイン外の関心事
+end note
+
+@enduml

@@ -1,6 +1,7 @@
 @startuml Booking
 
 !include ./BookingId/BookingId.pu
+!include ./CalendarEventId/CalendarEventId.pu
 !include ./Name/Name.pu
 !include ./PhoneNumber/PhoneNumber.pu
 !include ./CarId/CarId.pu
@@ -12,6 +13,7 @@
 
 class "Booking(予約)" as Booking << (R,red) RootEntity >> {
   + bookingId: BookingId
+  + calendarEventId: CalendarEventId [0..1]
   + customerName: Name
   + phoneNumber: PhoneNumber
   + carId: CarId
@@ -30,6 +32,9 @@ Booking *-- TimeRange
 Booking *-- Money
 Booking *-- BookingStatus
 
+' Optional（0..1）を明示
+Booking o-- "0..1" CalendarEventId
+
 ' 関係（他コンテキストをID参照するVO）
 Booking --> CarId
 Booking --> MenuId
@@ -44,6 +49,16 @@ note right of Booking
   - Cancelled  : キャンセル
   - Completed  : 完了
 
+  ■ 外部カレンダー連携（任意 / 1:1対応）
+  - Booking は外部カレンダー予定と 1:1 で対応できる
+  - calendarEventId は外部カレンダー側の予定ID
+  - Draft の段階でも「時間枠確保」のため予定を作成してよい（仮押さえ運用）
+  - 外部カレンダー上で予定が削除された場合、
+    対応する Booking はキャンセル扱いにする（自動キャンセル）
+
+  ※外部カレンダーの製品名やAPI仕様、metadataの持ち方はドメイン外とし、
+    インテグレーション設計（アプリケーション層/インフラ層）で扱う。
+
   ■ 変更できるタイミング
   - Draft のときだけ変更できる:
       - price の変更（changePrice）
@@ -54,6 +69,13 @@ note right of Booking
 
   ■ optionIds の制約
   - optionIds は重複を許さない（同じ OptionId を2回入れない）
+
+  ■ 確定後の「時間が増える変更」の扱い（概念）
+  - 剥がし追加 / 全面化 / リア追加 などで施工時間が伸びる変更は
+    予約枠に影響するため即時反映しない
+  - いったん「要リスケ（NeedsReschedule）」扱いとし、
+    外部カレンダーで枠確保後に Booking を更新する
+    （NeedsReschedule はステータス化せず概念として扱ってよい）
 end note
 
 @enduml
