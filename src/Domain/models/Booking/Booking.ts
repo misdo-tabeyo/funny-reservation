@@ -101,8 +101,28 @@ export class Booking {
     this._price = next;
   }
 
+  /**
+   * 通常のスケジュール変更（= 予約の内容をこちらの都合で変更）
+   * - Draft のときだけ許可
+   */
   reschedule(next: TimeRange): void {
     this.assertDraft('timeRangeを変更できません');
+    this._timeRange = next;
+  }
+
+  /**
+   * 外部カレンダー（正）に追従するためのスケジュール変更
+   * - 「Googleカレンダー上で動かされた」ことを許容する場合に使う
+   * - Draft/Confirmed は追従OK（= 運用で調整し得る）
+   * - Completed/Cancelled は追従NG（履歴として固定したい）
+   *
+   * ※このメソッド自体は「外部に問い合わせ」しない。
+   *   “反映する” だけを担う（問い合わせは Domain Service / Repository 側）。
+   */
+  rescheduleByCalendar(next: TimeRange): void {
+    if (this._status.isCompleted || this._status.isCancelled) {
+      throw new Error(`timeRangeを変更できません（status=${this._status.value}）`);
+    }
     this._timeRange = next;
   }
 
