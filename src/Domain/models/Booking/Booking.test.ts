@@ -8,6 +8,7 @@ import { TimeRange } from './TimeRange/TimeRange';
 import { Duration } from './TimeRange/Duration/Duration';
 import { DateTime } from 'Domain/models/shared/DateTime/DateTime';
 import { Money } from 'Domain/models/shared/Money/Money';
+import { CalendarEventId } from './CalendarEventId/CalendarEventId';
 
 describe('Booking', () => {
   const bookingId = new BookingId('bookingId_01');
@@ -23,6 +24,8 @@ describe('Booking', () => {
 
   const price = new Money({ amount: 20000, currency: 'JPY' });
 
+  const calendarEventId = new CalendarEventId('calendarEventId_01');
+
   describe('create', () => {
     it('初期ステータスは Draft を強制する', () => {
       const booking = Booking.create({
@@ -36,6 +39,19 @@ describe('Booking', () => {
 
       expect(booking.status.equals(new BookingStatus(BookingStatusEnum.Draft))).toBeTruthy();
       expect(booking.status.isDraft).toBe(true);
+    });
+
+    it('新規作成時は calendarEventId が未紐づけ（null）', () => {
+      const booking = Booking.create({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+      });
+
+      expect(booking.calendarEventId).toBeNull();
     });
 
     it('受け取った optionIds は防御的コピーされ、外部の配列変更の影響を受けない', () => {
@@ -103,10 +119,26 @@ describe('Booking', () => {
         timeRange,
         price,
         status,
+        calendarEventId: null,
       });
 
       expect(booking.status.equals(status)).toBeTruthy();
       expect(booking.status.isConfirmed).toBe(true);
+    });
+
+    it('calendarEventId を指定して再構築できる', () => {
+      const booking = Booking.reconstruct({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+        status: BookingStatus.confirmed(),
+        calendarEventId,
+      });
+
+      expect(booking.calendarEventId?.equals(calendarEventId)).toBeTruthy();
     });
 
     it('optionIds が重複している場合はエラーを投げる', () => {
@@ -121,6 +153,7 @@ describe('Booking', () => {
           timeRange,
           price,
           status,
+          calendarEventId: null,
         }),
       ).toThrow('optionIdsは重複を許可しません');
     });
@@ -152,6 +185,7 @@ describe('Booking', () => {
         timeRange,
         price,
         status: BookingStatus.confirmed(),
+        calendarEventId: null,
       });
 
       const next = new Money({ amount: 25000, currency: 'JPY' });
@@ -187,6 +221,7 @@ describe('Booking', () => {
         timeRange,
         price,
         status: BookingStatus.confirmed(),
+        calendarEventId: null,
       });
 
       const nextTimeRange = new TimeRange(
@@ -265,6 +300,7 @@ describe('Booking', () => {
         timeRange,
         price,
         status: BookingStatus.confirmed(),
+        calendarEventId: null,
       });
 
       const nextCarId = new CarId('carId_____02');
@@ -279,6 +315,91 @@ describe('Booking', () => {
       expect(() => booking.changeOptionIds([option2])).toThrow(
         'optionIdsを変更できません（status=Confirmed）',
       );
+    });
+  });
+
+  describe('calendarEvent linkage', () => {
+    it('Confirmed のとき linkCalendarEvent() で紐づけできる', () => {
+      const booking = Booking.reconstruct({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+        status: BookingStatus.confirmed(),
+        calendarEventId: null,
+      });
+
+      booking.linkCalendarEvent(calendarEventId);
+
+      expect(booking.calendarEventId?.equals(calendarEventId)).toBeTruthy();
+    });
+
+    it('Draft のとき linkCalendarEvent() できず例外', () => {
+      const booking = Booking.create({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+      });
+
+      expect(() => booking.linkCalendarEvent(calendarEventId)).toThrow(
+        'calendarEventIdを紐づけできません（status=Draft）',
+      );
+    });
+
+    it('すでに紐づいている場合 linkCalendarEvent() できず例外', () => {
+      const booking = Booking.reconstruct({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+        status: BookingStatus.confirmed(),
+        calendarEventId,
+      });
+
+      expect(() => booking.linkCalendarEvent(new CalendarEventId('calendarEventId_02'))).toThrow(
+        'calendarEventIdはすでに紐づいています',
+      );
+    });
+
+    it('Completed のとき unlinkCalendarEvent() できず例外', () => {
+      const booking = Booking.reconstruct({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+        status: BookingStatus.completed(),
+        calendarEventId,
+      });
+
+      expect(() => booking.unlinkCalendarEvent()).toThrow(
+        'calendarEventIdを解除できません（status=Completed）',
+      );
+    });
+
+    it('Confirmed のとき unlinkCalendarEvent() で解除できる（nullになる）', () => {
+      const booking = Booking.reconstruct({
+        bookingId,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+        status: BookingStatus.confirmed(),
+        calendarEventId,
+      });
+
+      booking.unlinkCalendarEvent();
+
+      expect(booking.calendarEventId).toBeNull();
     });
   });
 
@@ -354,6 +475,7 @@ describe('Booking', () => {
         timeRange,
         price,
         status: BookingStatus.confirmed(),
+        calendarEventId: null,
       });
 
       confirmed.complete();
@@ -385,6 +507,7 @@ describe('Booking', () => {
         timeRange,
         price,
         status: BookingStatus.completed(),
+        calendarEventId: null,
       });
 
       expect(() => completed.cancel()).toThrow(
