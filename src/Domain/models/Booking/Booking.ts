@@ -1,4 +1,3 @@
-// src/Domain/models/Booking/Booking.ts
 import { BookingId } from './BookingId/BookingId';
 import { CarId } from './CarId/CarId';
 import { MenuId } from './MenuId/MenuId';
@@ -7,6 +6,7 @@ import { TimeRange } from './TimeRange/TimeRange';
 import { Money } from 'Domain/models/shared/Money/Money';
 import { BookingStatus } from './BookingStatus/BookingStatus';
 import { BookingLifecycle } from './BookingLifecycle';
+import { CalendarEventId } from './CalendarEventId/CalendarEventId';
 
 export class Booking {
   private _carId: CarId;
@@ -16,6 +16,9 @@ export class Booking {
   private _price: Money;
   private _status: BookingStatus;
 
+  // 集約外は「IDで参照」
+  private _calendarEventId: CalendarEventId | null;
+
   private constructor(
     private readonly _bookingId: BookingId,
     carId: CarId,
@@ -24,6 +27,7 @@ export class Booking {
     timeRange: TimeRange,
     price: Money,
     status: BookingStatus,
+    calendarEventId: CalendarEventId | null,
   ) {
     this._carId = carId;
     this._menuId = menuId;
@@ -33,6 +37,9 @@ export class Booking {
 
     // 配列は参照渡しされるため、外部での変更がエンティティ内部状態に影響しないよう防御的コピーを行う
     this._optionIds = [...optionIds];
+
+    // 外部参照ID
+    this._calendarEventId = calendarEventId;
 
     // 生成時点で invariants を満たしていることを保証
     this.validateOptionIds(this._optionIds);
@@ -57,6 +64,7 @@ export class Booking {
       params.timeRange,
       params.price,
       BookingStatus.initial(), // 初期状態を強制
+      null, // 新規作成時は未紐づけ
     );
   }
 
@@ -71,6 +79,7 @@ export class Booking {
     timeRange: TimeRange;
     price: Money;
     status: BookingStatus;
+    calendarEventId: CalendarEventId | null;
   }): Booking {
     return new Booking(
       params.bookingId,
@@ -80,6 +89,7 @@ export class Booking {
       params.timeRange,
       params.price,
       params.status,
+      params.calendarEventId,
     );
   }
 
@@ -110,6 +120,26 @@ export class Booking {
     this.assertDraft('optionIdsを変更できません');
     this.validateOptionIds(next);
     this._optionIds = [...next]; // 防御的コピー
+  }
+
+  // ------------------------
+  // 集約外（カレンダー予定）との紐づけ
+  // ------------------------
+  linkCalendarEvent(eventId: CalendarEventId): void {
+    if (!this._status.isConfirmed && !this._status.isCompleted) {
+      throw new Error(`calendarEventIdを紐づけできません（status=${this._status.value}）`);
+    }
+    if (this._calendarEventId !== null) {
+      throw new Error('calendarEventIdはすでに紐づいています');
+    }
+    this._calendarEventId = eventId;
+  }
+
+  unlinkCalendarEvent(): void {
+    if (this._status.isCompleted) {
+      throw new Error(`calendarEventIdを解除できません（status=${this._status.value}）`);
+    }
+    this._calendarEventId = null;
   }
 
   // ------------------------
@@ -186,5 +216,10 @@ export class Booking {
 
   get status(): BookingStatus {
     return this._status;
+  }
+
+  // 外部参照はIDだけ公開
+  get calendarEventId(): CalendarEventId | null {
+    return this._calendarEventId;
   }
 }
