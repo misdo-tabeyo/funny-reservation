@@ -18,7 +18,7 @@ import { GoogleCalendarBookingCalendarEventRepository } from '../../Infrastructu
 import { GoogleCalendarClient } from '../../Infrastructure/GoogleCalendar/GoogleCalendarClient';
 
 const app = express();
-const port = 3000;
+const port = 8080;
 
 // JSON形式のリクエストボディを正しく解析するために必要
 app.use(express.json());

@@ -8,6 +8,6 @@ RUN npm install -g pnpm && pnpm install --prod
 COPY . .
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=8080
 
 CMD ["pnpm", "start"]
