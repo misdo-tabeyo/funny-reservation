@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node -r tsconfig-paths/register src/Presentation/Express/index.ts",
+    "start": "ts-node -r tsconfig-paths/register src/Presentation/Express/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:ci": "jest --runInBand",
