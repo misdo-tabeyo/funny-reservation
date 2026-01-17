@@ -15,9 +15,12 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
 
-    "baseUrl": "./",
+    "baseUrl": ".",
     "paths": {
-      "*": ["./src/*"]
+      "Domain/*": ["src/Domain/*"],
+      "Application/*": ["src/Application/*"],
+      "Infrastructure/*": ["src/Infrastructure/*"],
+      "Presentation/*": ["src/Presentation/*"]
     },
 
     "esModuleInterop": true,
