@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 
 import {
   CheckBookingSlotAvailabilityApplicationService,
@@ -26,6 +26,30 @@ app.use(express.json());
 app.get('/', (_req: Request, res: Response) => {
   res.send('Hello World!');
 });
+
+/**
+ * Bearer認証（API_TOKEN）
+ * - Authorizationヘッダが無い/違う場合は弾く
+ */
+function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  const token = process.env.API_TOKEN;
+
+  // 環境設定が漏れている場合はサーバ側の設定ミスなので 500
+  if (!token) {
+    res.status(500).json({ message: 'API_TOKEN is not set' });
+    return;
+  }
+
+  const auth = req.header('authorization') ?? '';
+  const expected = `Bearer ${token}`;
+
+  if (auth !== expected) {
+    res.status(401).json({ message: 'Unauthorized' });
+    return;
+  }
+
+  next();
+}
 
 /**
  * Presentation 層で Infrastructure を組み立てる（Zenn に寄せて index.ts 内で実施）
@@ -82,7 +106,7 @@ function buildGoogleCalendarBookingCalendarEventRepository(): GoogleCalendarBook
  * 空き確認
  * GET /booking/availability?carId=...&startAt=...&durationMinutes=60
  */
-app.get('/booking/availability', async (req: Request, res: Response) => {
+app.get('/booking/availability', requireAuth, async (req: Request, res: Response) => {
   try {
     const query: CheckBookingSlotAvailabilityQuery = {
       carId: String(req.query.carId ?? ''),
@@ -104,7 +128,7 @@ app.get('/booking/availability', async (req: Request, res: Response) => {
  * 仮予約作成（= Googleカレンダーに【仮】予定を作成して枠を占有する）
  * POST /booking/draft
  */
-app.post('/booking/draft', async (req: Request, res: Response) => {
+app.post('/booking/draft', requireAuth, async (req: Request, res: Response) => {
   try {
     const requestBody = req.body as CreateProvisionalBookingCommand;
 
