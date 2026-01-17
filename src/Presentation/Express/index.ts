@@ -17,11 +17,21 @@ import { GoogleCalendarBookingSlotAvailabilityQuery } from '../../Infrastructure
 import { GoogleCalendarBookingCalendarEventRepository } from '../../Infrastructure/Booking/GoogleCalendarBookingCalendarEventRepository';
 import { GoogleCalendarClient } from '../../Infrastructure/GoogleCalendar/GoogleCalendarClient';
 
+import path from 'node:path';
+
 const app = express();
 const port = 8080;
 
 // JSON形式のリクエストボディを正しく解析するために必要
 app.use(express.json());
+
+// 静的ファイル配信
+const publicDir = path.resolve(__dirname, 'public');
+app.use(express.static(publicDir));
+
+app.get('/privacy', (_req: Request, res: Response) => {
+  res.sendFile(path.join(publicDir, 'privacy.html'));
+});
 
 app.get('/', (_req: Request, res: Response) => {
   res.send('Hello World!');
