@@ -33,6 +33,10 @@ app.get('/privacy', (_req: Request, res: Response) => {
   res.sendFile(path.join(publicDir, 'privacy.html'));
 });
 
+app.get('/openapi', (_req: Request, res: Response) => {
+  res.sendFile(path.join(publicDir, 'openapi.json'));
+});
+
 app.get('/', (_req: Request, res: Response) => {
   res.send('Hello World!');
 });

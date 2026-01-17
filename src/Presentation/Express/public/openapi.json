@@ -1,0 +1,176 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Funny Reservation API",
+    "version": "1.0.0",
+    "description": "Current API spec for Funny Reservation."
+  },
+  "servers": [
+    {
+      "url": "https://funny-reservation-ghv4mlyezq-an.a.run.app"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "healthCheck",
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/booking/availability": {
+      "get": {
+        "operationId": "checkBookingAvailability",
+        "summary": "Check booking slot availability",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "carId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Car ID (10-50 chars, a-zA-Z0-9_-)"
+          },
+          {
+            "name": "startAt",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ISO string like 2026-01-04T00:00:00.000Z"
+          },
+          {
+            "name": "durationMinutes",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Duration minutes (multiple of 60)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Availability result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CheckBookingSlotAvailabilityResult" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/booking/draft": {
+      "post": {
+        "operationId": "createProvisionalBooking",
+        "summary": "Create provisional booking (calendar event)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateProvisionalBookingCommand" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provisional booking",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProvisionalBookingDTO" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "API_TOKEN"
+      }
+    },
+    "schemas": {
+      "CheckBookingSlotAvailabilityResult": {
+        "type": "object",
+        "required": ["available"],
+        "properties": {
+          "available": { "type": "boolean" }
+        }
+      },
+      "CreateProvisionalBookingCommand": {
+        "type": "object",
+        "required": ["carId", "startAt", "durationMinutes"],
+        "properties": {
+          "carId": { "type": "string" },
+          "startAt": { "type": "string" },
+          "durationMinutes": { "type": "integer" },
+          "customerName": { "type": "string" },
+          "carModelName": { "type": "string" },
+          "menuLabel": { "type": "string" },
+          "channel": { "type": "string" }
+        }
+      },
+      "ProvisionalBookingDTO": {
+        "type": "object",
+        "required": ["carId", "startAt", "durationMinutes", "calendarEventId"],
+        "properties": {
+          "carId": { "type": "string" },
+          "startAt": { "type": "string" },
+          "durationMinutes": { "type": "integer" },
+          "calendarEventId": { "type": "string" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}
