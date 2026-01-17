@@ -1,6 +1,10 @@
 import { google, calendar_v3 } from 'googleapis';
 import { JWT } from 'google-auth-library';
-import { IGoogleCalendarClient, CalendarEvent } from './IGoogleCalendarClient';
+import {
+  IGoogleCalendarClient,
+  CalendarEvent,
+  InsertCalendarEventParams,
+} from './IGoogleCalendarClient';
 
 export type GoogleCalendarClientConfig = {
   serviceAccountEmail: string;
@@ -14,7 +18,8 @@ export class GoogleCalendarClient implements IGoogleCalendarClient {
     const auth = new JWT({
       email: config.serviceAccountEmail,
       key: config.privateKey,
-      scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
+      // ✅ read/write
+      scopes: ['https://www.googleapis.com/auth/calendar'],
     });
 
     this.calendar = google.calendar({ version: 'v3', auth });
@@ -29,7 +34,7 @@ export class GoogleCalendarClient implements IGoogleCalendarClient {
       calendarId: params.calendarId,
       timeMin: params.timeMin,
       timeMax: params.timeMax,
-      singleEvents: true, // recurring を展開
+      singleEvents: true,
       orderBy: 'startTime',
       maxResults: 2500,
     });
@@ -39,17 +44,33 @@ export class GoogleCalendarClient implements IGoogleCalendarClient {
     return items.map((e) => ({
       status: e.status ?? null,
       start: e.start
-        ? {
-            dateTime: e.start.dateTime ?? undefined,
-            date: e.start.date ?? undefined,
-          }
+        ? { dateTime: e.start.dateTime ?? undefined, date: e.start.date ?? undefined }
         : null,
       end: e.end
-        ? {
-            dateTime: e.end.dateTime ?? undefined,
-            date: e.end.date ?? undefined,
-          }
+        ? { dateTime: e.end.dateTime ?? undefined, date: e.end.date ?? undefined }
         : null,
     }));
+  }
+
+  async insertEvent(params: {
+    calendarId: string;
+    event: InsertCalendarEventParams;
+  }): Promise<{ eventId: string }> {
+    const res = await this.calendar.events.insert({
+      calendarId: params.calendarId,
+      requestBody: {
+        summary: params.event.summary,
+        description: params.event.description,
+        start: { dateTime: params.event.start.dateTime },
+        end: { dateTime: params.event.end.dateTime },
+      },
+    });
+
+    const eventId = res.data.id;
+    if (!eventId) {
+      throw new Error('Google Calendar eventId の取得に失敗しました');
+    }
+
+    return { eventId };
   }
 }
