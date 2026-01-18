@@ -2,4 +2,11 @@
 class "PhoneNumber(電話番号)" as PhoneNumber <<ValueObject>> {
   + value: string
 }
+
+note right of PhoneNumber
+  実装（PhoneNumber.ts）準拠
+  - 国内番号（日本 +81）のみ許容
+  - 内部保持は canonical: +81XXXXXXXXXX（E.164風）
+  - 入力はハイフン/空白/括弧を含んでもOK（正規化して保持）
+end note
 @enduml

@@ -1,6 +1,13 @@
 @startuml Money
 class "Money(料金)" as Money <<ValueObject>> {
   + amount: number
-  + currency: string
+  + currency: 'JPY'
 }
+
+note right of Money
+  実装（Money.ts）準拠
+  - 通貨は当面 JPY のみ
+  - amount は整数（円）
+  - 範囲: 0〜1,000,000,000
+end note
 @enduml

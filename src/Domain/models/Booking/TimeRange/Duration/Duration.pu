@@ -2,4 +2,10 @@
 class "Duration(所要時間)" as Duration <<ValueObject>> {
   + minutes: number
 }
+
+note right of Duration
+  実装（Duration.ts）準拠
+  - 1時間以上（minutes >= 60）
+  - 1時間単位（minutes は 60 の倍数）
+end note
 @enduml

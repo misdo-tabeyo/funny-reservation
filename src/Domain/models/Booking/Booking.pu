@@ -43,6 +43,11 @@ Booking --> OptionId
 note right of Booking
   【Bookingの基本ルール】
 
+  ■ TODO（未実装）
+  - customerName: Name
+  - phoneNumber: PhoneNumber
+  ※現状の Booking.ts にはまだ存在しない（将来的に追加予定）
+
   ■ ステータス
   - Draft      : 下書き（作成直後）
   - Confirmed  : 確定

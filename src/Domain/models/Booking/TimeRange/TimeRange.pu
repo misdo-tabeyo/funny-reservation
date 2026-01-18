@@ -7,7 +7,7 @@ class "TimeRange(時間帯)" as TimeRange <<ValueObject>> {
   + startAt: DateTime
   + endAt: DateTime
   --
-  + duration(): Duration
+  + duration: Duration
   + overlaps(other: TimeRange): boolean
   + contains(at: DateTime): boolean
 }
@@ -16,9 +16,10 @@ TimeRange *-- DateTime
 TimeRange *-- Duration
 
 note right of TimeRange
-  不変条件の例:
-  - startAt < endAt
-  - overlaps判定は [start, end) の半開区間で統一すると安全
+  実装（TimeRange.ts）準拠
+  - endAt は startAt + duration の派生（保持しない）
+  - 予約は1時間単位のため、開始時刻は「ちょうど00分」のみ許容
+  - 区間は [start, end)（endは含まない）
 end note
 
 @enduml

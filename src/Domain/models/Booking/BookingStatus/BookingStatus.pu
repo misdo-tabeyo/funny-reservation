@@ -1,7 +1,16 @@
 @startuml BookingStatus
 enum "BookingStatus" as BookingStatus {
-  TEMPORARY
-  CONFIRMED
-  CANCELED
+  Draft
+  Confirmed
+  Cancelled
+  Completed
 }
+
+note right of BookingStatus
+  実装（BookingStatus.ts）準拠
+  - Draft: 下書き
+  - Confirmed: 確定
+  - Cancelled: キャンセル
+  - Completed: 完了
+end note
 @enduml

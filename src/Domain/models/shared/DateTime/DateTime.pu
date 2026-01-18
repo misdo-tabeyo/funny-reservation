@@ -2,4 +2,11 @@
 class "DateTime" as DateTime <<ValueObject>> {
   + value: string
 }
+
+note right of DateTime
+  実装（DateTime.ts）準拠
+  - ISO 8601（UTC, Z付き, ミリ秒付き）のみ許容
+    例: 2026-01-04T00:00:00.000Z
+  - 内部保持も canonical に統一
+end note
 @enduml

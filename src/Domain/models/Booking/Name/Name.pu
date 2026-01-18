@@ -2,4 +2,10 @@
 class "Name(名前)" as Name <<ValueObject>> {
   + value: string
 }
+
+note right of Name
+  実装（Name.ts）準拠
+  - 1〜100文字
+  - 空白のみは不可（trim後に長さ0はNG）
+end note
 @enduml
