@@ -12,6 +12,10 @@ import {
 } from '../../Application/Booking/CreateProvisionalBookingApplicationService/CreateProvisionalBookingApplicationService';
 
 import {
+  CheckBookingEligibilityApplicationService,
+} from '../../Application/Booking/CheckBookingEligibilityApplicationService/CheckBookingEligibilityApplicationService';
+
+import {
   GetNearestAvailableBookingSlotsApplicationService,
   GetNearestAvailableBookingSlotsQuery,
 } from '../../Application/Booking/GetNearestAvailableBookingSlotsApplicationService/GetNearestAvailableBookingSlotsApplicationService';
@@ -214,19 +218,32 @@ app.post('/booking/draft', requireAuth, async (req: Request, res: Response) => {
 
     const requestBody: CreateProvisionalBookingCommand = validated.value;
 
+    const calendarEventQuery = buildGoogleCalendarBookingCalendarEventQuery();
     const duplicationCheckDomainService = buildDuplicationCheckDomainService();
     const bookingCalendarEventRepository = buildGoogleCalendarBookingCalendarEventRepository();
+
+    const eligibilityService = new CheckBookingEligibilityApplicationService(
+      calendarEventQuery,
+      duplicationCheckDomainService,
+    );
 
     const applicationService = new CreateProvisionalBookingApplicationService(
       duplicationCheckDomainService,
       bookingCalendarEventRepository,
+      eligibilityService,
     );
 
     const dto = await applicationService.execute(requestBody);
 
     res.status(200).json(dto.toJSON());
   } catch (error) {
-    res.status(500).json({ message: (error as Error).message });
+    const message = (error as Error).message;
+    // 予約不可（ルール違反 or 重複）は 409
+    if (message.includes('埋まっています') || message.includes('予約')) {
+      res.status(409).json({ message });
+      return;
+    }
+    res.status(500).json({ message });
   }
 });
 

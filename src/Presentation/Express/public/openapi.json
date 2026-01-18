@@ -97,6 +97,7 @@
       "post": {
         "operationId": "createProvisionalBooking",
         "summary": "Create provisional booking (calendar event)",
+        "description": "仮予約を作成します（Googleカレンダーに【仮】予定を作成して枠を占有）。予約枠ルール違反または重複がある場合は 409 を返します。時間はUTC(入力ISO/RFC3339、返却canonical UTC)。",
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
@@ -112,6 +113,14 @@
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ProvisionalBookingDTO" }
+              }
+            }
+          },
+          "409": {
+            "description": "Booking is not bookable",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             }
           },
