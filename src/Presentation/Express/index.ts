@@ -27,6 +27,7 @@ import path from 'node:path';
 
 import {
   validateCreateProvisionalBookingCommand,
+  validateCheckAvailabilityQuery,
   validateNearestAvailableSlotsQuery,
 } from './requestValidation';
 
@@ -135,14 +136,19 @@ function buildGoogleCalendarBookingCalendarEventQuery(): GoogleCalendarBookingCa
 
 /**
  * 空き確認
- * GET /booking/availability?carId=...&startAt=...&durationMinutes=60
+ * GET /booking/availability?startAt=...&durationMinutes=60
  */
 app.get('/booking/availability', requireAuth, async (req: Request, res: Response) => {
   try {
+    const validated = validateCheckAvailabilityQuery(req.query);
+    if (!validated.ok) {
+      res.status(400).json({ message: validated.message });
+      return;
+    }
+
     const query: CheckBookingSlotAvailabilityQuery = {
-      carId: String(req.query.carId ?? ''),
-      startAt: String(req.query.startAt ?? ''),
-      durationMinutes: Number(req.query.durationMinutes ?? NaN),
+      startAt: validated.value.startAt,
+      durationMinutes: validated.value.durationMinutes,
     };
 
     const availabilityQuery = buildGoogleCalendarAvailabilityQuery();

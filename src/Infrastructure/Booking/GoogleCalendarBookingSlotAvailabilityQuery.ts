@@ -1,4 +1,3 @@
-import { CarId } from 'Domain/models/Booking/CarId/CarId';
 import { TimeRange } from 'Domain/models/Booking/TimeRange/TimeRange';
 import {
   IBookingSlotAvailabilityQuery,
@@ -12,7 +11,7 @@ export class GoogleCalendarBookingSlotAvailabilityQuery implements IBookingSlotA
     private readonly calendarId: string,
   ) {}
 
-  async existsOverlappingSlot(params: { carId: CarId; timeRange: TimeRange }): Promise<boolean> {
+  async existsOverlappingSlot(params: { timeRange: TimeRange }): Promise<boolean> {
     const { timeRange } = params;
 
     // listEvents は「開始が timeMin〜timeMax のイベント」中心なので、検索窓を少し広げる

@@ -1,5 +1,4 @@
 // src/Domain/services/Booking/BookingSlotDuplicationCheckDomainService/BookingSlotDuplicationCheckDomainService.ts
-import { CarId } from 'Domain/models/Booking/CarId/CarId';
 import { TimeRange } from 'Domain/models/Booking/TimeRange/TimeRange';
 
 /**
@@ -15,7 +14,7 @@ export interface IBookingSlotAvailabilityQuery {
    * 指定枠に「すでに予約（イベント）が存在するか？」
    * true なら重複あり（埋まっている）
    */
-  existsOverlappingSlot(params: { carId: CarId; timeRange: TimeRange }): Promise<boolean>;
+  existsOverlappingSlot(params: { timeRange: TimeRange }): Promise<boolean>;
 }
 
 /**
@@ -24,7 +23,7 @@ export interface IBookingSlotAvailabilityQuery {
  * - 後で Google Calendar 実装に差し替える
  */
 class StubBookingSlotAvailabilityQuery implements IBookingSlotAvailabilityQuery {
-  async existsOverlappingSlot(params: { carId: CarId; timeRange: TimeRange }): Promise<boolean> {
+  async existsOverlappingSlot(params: { timeRange: TimeRange }): Promise<boolean> {
     void params;
     return false;
   }
@@ -39,7 +38,7 @@ export class BookingSlotDuplicationCheckDomainService {
    * true: 重複あり（埋まっている）
    * false: 重複なし（空いている）
    */
-  async execute(params: { carId: CarId; timeRange: TimeRange }): Promise<boolean> {
+  async execute(params: { timeRange: TimeRange }): Promise<boolean> {
     return this.availabilityQuery.existsOverlappingSlot(params);
   }
 }

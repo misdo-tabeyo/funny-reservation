@@ -11,6 +11,11 @@ export type NearestAvailableSlotsQuery = {
   searchDays?: number;
 };
 
+export type CheckAvailabilityQuery = {
+  startAt: string;
+  durationMinutes: number;
+};
+
 /**
  * API入力の日時は「ISO/RFC3339っぽいが揺れる」ことが多いので、Presentation層で canonical に正規化する。
  * - 許容例: 2026-01-18T00:00Z / 2026-01-18T00:00:00Z / 2026-01-18T00:00:00.000Z / 2026-01-18T00:00:00+09:00
@@ -139,6 +144,48 @@ export function validateNearestAvailableSlotsQuery(
       durationMinutes,
       limit,
       searchDays,
+    },
+  };
+}
+
+export function validateCheckAvailabilityQuery(query: unknown): ValidationResult<CheckAvailabilityQuery> {
+  if (!query || typeof query !== 'object') {
+    return { ok: false, message: 'Invalid query' };
+  }
+
+  const q = query as Record<string, unknown>;
+
+  const startAtRaw = typeof q.startAt === 'string' ? q.startAt.trim() : '';
+  const durationMinutesRaw = q.durationMinutes;
+
+  const durationMinutes =
+    typeof durationMinutesRaw === 'string'
+      ? Number(durationMinutesRaw)
+      : typeof durationMinutesRaw === 'number'
+        ? durationMinutesRaw
+        : NaN;
+
+  if (!startAtRaw) {
+    return { ok: false, message: 'startAt is required' };
+  }
+
+  const normalizedStartAt = normalizeIsoToCanonicalZ(startAtRaw);
+  if (!normalizedStartAt.ok) {
+    return { ok: false, message: 'startAt must be a valid ISO datetime string' };
+  }
+
+  if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+    return { ok: false, message: 'durationMinutes must be a positive number' };
+  }
+  if (!Number.isInteger(durationMinutes) || durationMinutes < 60 || durationMinutes % 60 !== 0) {
+    return { ok: false, message: 'durationMinutes must be an integer (>=60, multiple of 60)' };
+  }
+
+  return {
+    ok: true,
+    value: {
+      startAt: normalizedStartAt.value,
+      durationMinutes,
     },
   };
 }

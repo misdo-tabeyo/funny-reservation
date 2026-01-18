@@ -34,7 +34,7 @@ export class CreateProvisionalBookingApplicationService {
     const timeRange = new TimeRange(startAt, duration);
 
     // 重複チェック（Googleカレンダーが正）
-    const duplicated = await this.duplicationCheckDomainService.execute({ carId, timeRange });
+    const duplicated = await this.duplicationCheckDomainService.execute({ timeRange });
     if (duplicated) {
       throw new Error('指定の枠は既に埋まっています');
     }

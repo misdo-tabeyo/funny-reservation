@@ -30,16 +30,9 @@
     "/booking/availability": {
       "get": {
         "operationId": "checkBookingAvailability",
-        "summary": "Check booking slot availability",
+        "summary": "Check booking slot availability (calendar-wide)",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
-          {
-            "name": "carId",
-            "in": "query",
-            "required": true,
-            "schema": { "type": "string" },
-            "description": "Car ID (10-50 chars, a-zA-Z0-9_-)"
-          },
           {
             "name": "startAt",
             "in": "query",
@@ -61,6 +54,14 @@
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/CheckBookingSlotAvailabilityResult" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
               }
             }
           },

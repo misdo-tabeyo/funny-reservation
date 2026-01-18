@@ -1,4 +1,5 @@
 import {
+  validateCheckAvailabilityQuery,
   validateCreateProvisionalBookingCommand,
   validateNearestAvailableSlotsQuery,
 } from './requestValidation';
@@ -108,6 +109,47 @@ describe('validateNearestAvailableSlotsQuery', () => {
 
   it('durationMinutes が60の倍数でなければ ok=false', () => {
     const result = validateNearestAvailableSlotsQuery({
+      durationMinutes: '90',
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      message: 'durationMinutes must be an integer (>=60, multiple of 60)',
+    });
+  });
+});
+
+describe('validateCheckAvailabilityQuery', () => {
+  it('必須項目が揃っていれば ok=true（startAtはcanonicalに正規化）', () => {
+    const result = validateCheckAvailabilityQuery({
+      startAt: '2024-01-01T09:00:00+09:00',
+      durationMinutes: '60',
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value).toEqual({
+      startAt: '2024-01-01T00:00:00.000Z',
+      durationMinutes: 60,
+    });
+  });
+
+  it('startAt が不正なら ok=false', () => {
+    const result = validateCheckAvailabilityQuery({
+      startAt: 'not-a-date',
+      durationMinutes: '60',
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      message: 'startAt must be a valid ISO datetime string',
+    });
+  });
+
+  it('durationMinutes が60の倍数でなければ ok=false', () => {
+    const result = validateCheckAvailabilityQuery({
+      startAt: '2024-01-01T00:00:00.000Z',
       durationMinutes: '90',
     });
 
