@@ -1,4 +1,7 @@
-import { validateCreateProvisionalBookingCommand } from './requestValidation';
+import {
+  validateCreateProvisionalBookingCommand,
+  validateNearestAvailableSlotsQuery,
+} from './requestValidation';
 
 describe('validateCreateProvisionalBookingCommand', () => {
   it('必須項目が揃っていれば ok=true', () => {
@@ -41,5 +44,49 @@ describe('validateCreateProvisionalBookingCommand', () => {
     });
 
     expect(result).toEqual({ ok: false, message: 'phoneNumber is required' });
+  });
+});
+
+describe('validateNearestAvailableSlotsQuery', () => {
+  it('必須項目が揃っていれば ok=true', () => {
+    const result = validateNearestAvailableSlotsQuery({
+      from: '2026-01-18T00:00:00.000Z',
+      durationMinutes: '60',
+      limit: '5',
+      searchDays: '30',
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value).toEqual({
+      from: '2026-01-18T00:00:00.000Z',
+      durationMinutes: 60,
+      limit: 5,
+      searchDays: 30,
+    });
+  });
+
+  it('from の形式が不正なら ok=false', () => {
+    const result = validateNearestAvailableSlotsQuery({
+      from: '2026-01-18T00:00:00Z',
+      durationMinutes: '60',
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      message: 'from must be an ISO string like 2026-01-18T00:00:00.000Z',
+    });
+  });
+
+  it('durationMinutes が60の倍数でなければ ok=false', () => {
+    const result = validateNearestAvailableSlotsQuery({
+      durationMinutes: '90',
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      message: 'durationMinutes must be an integer (>=60, multiple of 60)',
+    });
   });
 });

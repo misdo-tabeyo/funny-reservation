@@ -11,15 +11,24 @@ import {
   CreateProvisionalBookingCommand,
 } from '../../Application/Booking/CreateProvisionalBookingApplicationService/CreateProvisionalBookingApplicationService';
 
+import {
+  GetNearestAvailableBookingSlotsApplicationService,
+  GetNearestAvailableBookingSlotsQuery,
+} from '../../Application/Booking/GetNearestAvailableBookingSlotsApplicationService/GetNearestAvailableBookingSlotsApplicationService';
+
 import { BookingSlotDuplicationCheckDomainService } from '../../Domain/services/Booking/BookingSlotDuplicationCheckDomainService/BookingSlotDuplicationCheckDomainService';
 
 import { GoogleCalendarBookingSlotAvailabilityQuery } from '../../Infrastructure/Booking/GoogleCalendarBookingSlotAvailabilityQuery';
 import { GoogleCalendarBookingCalendarEventRepository } from '../../Infrastructure/Booking/GoogleCalendarBookingCalendarEventRepository';
+import { GoogleCalendarBookingCalendarEventQuery } from '../../Infrastructure/Booking/GoogleCalendarBookingCalendarEventQuery';
 import { GoogleCalendarClient } from '../../Infrastructure/GoogleCalendar/GoogleCalendarClient';
 
 import path from 'node:path';
 
-import { validateCreateProvisionalBookingCommand } from './requestValidation';
+import {
+  validateCreateProvisionalBookingCommand,
+  validateNearestAvailableSlotsQuery,
+} from './requestValidation';
 
 const app = express();
 const port = 8080;
@@ -118,6 +127,12 @@ function buildGoogleCalendarBookingCalendarEventRepository(): GoogleCalendarBook
   return new GoogleCalendarBookingCalendarEventRepository(client, env.calendarId);
 }
 
+function buildGoogleCalendarBookingCalendarEventQuery(): GoogleCalendarBookingCalendarEventQuery {
+  const env = getGoogleCalendarEnv();
+  const client = buildGoogleCalendarClient();
+  return new GoogleCalendarBookingCalendarEventQuery(client, env.calendarId);
+}
+
 /**
  * 空き確認
  * GET /booking/availability?carId=...&startAt=...&durationMinutes=60
@@ -132,6 +147,35 @@ app.get('/booking/availability', requireAuth, async (req: Request, res: Response
 
     const availabilityQuery = buildGoogleCalendarAvailabilityQuery();
     const applicationService = new CheckBookingSlotAvailabilityApplicationService(availabilityQuery);
+
+    const result = await applicationService.execute(query);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: (error as Error).message });
+  }
+});
+
+/**
+ * 直近の予約可能枠を取得
+ * GET /booking/available-slots/nearest?carId=...&from=...&durationMinutes=60&limit=5&searchDays=30
+ */
+app.get('/booking/available-slots/nearest', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const validated = validateNearestAvailableSlotsQuery(req.query);
+    if (!validated.ok) {
+      res.status(400).json({ message: validated.message });
+      return;
+    }
+
+    const query: GetNearestAvailableBookingSlotsQuery = {
+      from: validated.value.from,
+      durationMinutes: validated.value.durationMinutes,
+      limit: validated.value.limit,
+      searchDays: validated.value.searchDays,
+    };
+
+    const calendarEventQuery = buildGoogleCalendarBookingCalendarEventQuery();
+    const applicationService = new GetNearestAvailableBookingSlotsApplicationService(calendarEventQuery);
 
     const result = await applicationService.execute(query);
     res.status(200).json(result);

@@ -4,6 +4,15 @@ export type ValidationResult<T> =
   | { ok: true; value: T }
   | { ok: false; message: string };
 
+export type NearestAvailableSlotsQuery = {
+  from?: string;
+  durationMinutes: number;
+  limit?: number;
+  searchDays?: number;
+};
+
+const CANONICAL_ISO_Z_WITH_MS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
 export function validateCreateProvisionalBookingCommand(
   body: unknown,
 ): ValidationResult<CreateProvisionalBookingCommand> {
@@ -37,5 +46,74 @@ export function validateCreateProvisionalBookingCommand(
       customerName,
       phoneNumber,
     } as CreateProvisionalBookingCommand,
+  };
+}
+
+export function validateNearestAvailableSlotsQuery(
+  query: unknown,
+): ValidationResult<NearestAvailableSlotsQuery> {
+  if (!query || typeof query !== 'object') {
+    return { ok: false, message: 'Invalid query' };
+  }
+
+  const q = query as Record<string, unknown>;
+
+  const from = typeof q.from === 'string' ? q.from.trim() : undefined;
+  const durationMinutesRaw = q.durationMinutes;
+  const limitRaw = q.limit;
+  const searchDaysRaw = q.searchDays;
+
+  const durationMinutes =
+    typeof durationMinutesRaw === 'string'
+      ? Number(durationMinutesRaw)
+      : typeof durationMinutesRaw === 'number'
+        ? durationMinutesRaw
+        : NaN;
+
+  const limit =
+    typeof limitRaw === 'string'
+      ? Number(limitRaw)
+      : typeof limitRaw === 'number'
+        ? limitRaw
+        : undefined;
+
+  const searchDays =
+    typeof searchDaysRaw === 'string'
+      ? Number(searchDaysRaw)
+      : typeof searchDaysRaw === 'number'
+        ? searchDaysRaw
+        : undefined;
+
+  if (from && !CANONICAL_ISO_Z_WITH_MS.test(from)) {
+    return { ok: false, message: 'from must be an ISO string like 2026-01-18T00:00:00.000Z' };
+  }
+
+  if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+    return { ok: false, message: 'durationMinutes must be a positive number' };
+  }
+  if (!Number.isInteger(durationMinutes) || durationMinutes < 60 || durationMinutes % 60 !== 0) {
+    return { ok: false, message: 'durationMinutes must be an integer (>=60, multiple of 60)' };
+  }
+
+  if (limit !== undefined) {
+    if (!Number.isFinite(limit) || !Number.isInteger(limit) || limit <= 0) {
+      return { ok: false, message: 'limit must be a positive integer' };
+    }
+  }
+
+  if (searchDays !== undefined) {
+    if (!Number.isFinite(searchDays) || !Number.isInteger(searchDays) || searchDays <= 0) {
+      return { ok: false, message: 'searchDays must be a positive integer' };
+    }
+  }
+
+  return {
+    ok: true,
+    value: {
+      from,
+      durationMinutes,
+      limit,
+      searchDays,
+    },
   };
 }

@@ -131,6 +131,77 @@
           }
         }
       }
+    },
+    "/booking/available-slots/nearest": {
+      "get": {
+        "operationId": "getNearestAvailableBookingSlots",
+        "summary": "Get nearest available booking slots (calendar-wide)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Search start (canonical ISO like 2026-01-18T00:00:00.000Z). If omitted, server uses now()."
+          },
+          {
+            "name": "durationMinutes",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Duration minutes (>=60, multiple of 60)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer" },
+            "description": "How many slots to return (default 5, max 20)"
+          },
+          {
+            "name": "searchDays",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer" },
+            "description": "How many days to look ahead (default 30, max 90)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Nearest available booking slots",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GetNearestAvailableBookingSlotsResult" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -178,6 +249,26 @@
         "required": ["message"],
         "properties": {
           "message": { "type": "string" }
+        }
+      },
+      "GetNearestAvailableBookingSlotsResult": {
+        "type": "object",
+        "required": ["from", "durationMinutes", "slots"],
+        "properties": {
+          "from": { "type": "string" },
+          "durationMinutes": { "type": "integer" },
+          "slots": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AvailableSlot" }
+          }
+        }
+      },
+      "AvailableSlot": {
+        "type": "object",
+        "required": ["startAt", "endAt"],
+        "properties": {
+          "startAt": { "type": "string" },
+          "endAt": { "type": "string" }
         }
       }
     }
