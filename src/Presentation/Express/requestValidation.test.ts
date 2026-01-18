@@ -23,6 +23,21 @@ describe('validateCreateProvisionalBookingCommand', () => {
     expect(result.value.phoneNumber).toBe('090-1234-5678');
   });
 
+  it('startAt が +09:00 でも canonical(Z+ms) に正規化される', () => {
+    const result = validateCreateProvisionalBookingCommand({
+      carId: 'car-1',
+      startAt: '2024-01-01T09:00:00+09:00',
+      durationMinutes: 60,
+      customerName: '山田太郎',
+      phoneNumber: '090-1234-5678',
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.startAt).toBe('2024-01-01T00:00:00.000Z');
+  });
+
   it('customerName が空なら ok=false', () => {
     const result = validateCreateProvisionalBookingCommand({
       carId: 'car-1',
@@ -67,15 +82,27 @@ describe('validateNearestAvailableSlotsQuery', () => {
     });
   });
 
-  it('from の形式が不正なら ok=false', () => {
+  it('from が秒/ミリ秒省略でも canonical(Z+ms) に正規化される', () => {
     const result = validateNearestAvailableSlotsQuery({
       from: '2026-01-18T00:00:00Z',
       durationMinutes: '60',
     });
 
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.from).toBe('2026-01-18T00:00:00.000Z');
+  });
+
+  it('from が不正なら ok=false', () => {
+    const result = validateNearestAvailableSlotsQuery({
+      from: 'not-a-date',
+      durationMinutes: '60',
+    });
+
     expect(result).toEqual({
       ok: false,
-      message: 'from must be an ISO string like 2026-01-18T00:00:00.000Z',
+      message: 'from must be a valid ISO datetime string',
     });
   });
 

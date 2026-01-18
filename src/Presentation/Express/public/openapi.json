@@ -45,7 +45,7 @@
             "in": "query",
             "required": true,
             "schema": { "type": "string" },
-            "description": "ISO string like 2026-01-04T00:00:00.000Z"
+            "description": "Start datetime (ISO/RFC3339). Examples: 2026-01-18T00:00Z / 2026-01-18T00:00:00Z / 2026-01-18T00:00:00.000Z / 2026-01-18T09:00:00+09:00. Server normalizes to UTC canonical."
           },
           {
             "name": "durationMinutes",
@@ -143,7 +143,7 @@
             "in": "query",
             "required": false,
             "schema": { "type": "string" },
-            "description": "Search start (canonical ISO like 2026-01-18T00:00:00.000Z). If omitted, server uses now()."
+            "description": "Search start (ISO/RFC3339). If omitted, server uses now(). Server normalizes to UTC canonical before searching."
           },
           {
             "name": "durationMinutes",
@@ -225,7 +225,10 @@
         "required": ["carId", "startAt", "durationMinutes", "customerName", "phoneNumber"],
         "properties": {
           "carId": { "type": "string" },
-          "startAt": { "type": "string" },
+          "startAt": {
+            "type": "string",
+            "description": "Start datetime (ISO/RFC3339). Server normalizes to UTC canonical (YYYY-MM-DDTHH:mm:ss.SSSZ)."
+          },
           "durationMinutes": { "type": "integer" },
           "customerName": { "type": "string" },
           "phoneNumber": { "type": "string" },
@@ -239,7 +242,10 @@
         "required": ["carId", "startAt", "durationMinutes", "calendarEventId"],
         "properties": {
           "carId": { "type": "string" },
-          "startAt": { "type": "string" },
+          "startAt": {
+            "type": "string",
+            "description": "Canonical UTC datetime (YYYY-MM-DDTHH:mm:ss.SSSZ)."
+          },
           "durationMinutes": { "type": "integer" },
           "calendarEventId": { "type": "string" }
         }
@@ -255,7 +261,10 @@
         "type": "object",
         "required": ["from", "durationMinutes", "slots"],
         "properties": {
-          "from": { "type": "string" },
+          "from": {
+            "type": "string",
+            "description": "Effective search start in canonical UTC datetime (YYYY-MM-DDTHH:mm:ss.SSSZ)."
+          },
           "durationMinutes": { "type": "integer" },
           "slots": {
             "type": "array",
@@ -267,8 +276,14 @@
         "type": "object",
         "required": ["startAt", "endAt"],
         "properties": {
-          "startAt": { "type": "string" },
-          "endAt": { "type": "string" }
+          "startAt": {
+            "type": "string",
+            "description": "Canonical UTC datetime (YYYY-MM-DDTHH:mm:ss.SSSZ)."
+          },
+          "endAt": {
+            "type": "string",
+            "description": "Canonical UTC datetime (YYYY-MM-DDTHH:mm:ss.SSSZ)."
+          }
         }
       }
     }

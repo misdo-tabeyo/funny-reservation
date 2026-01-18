@@ -11,7 +11,25 @@ export type NearestAvailableSlotsQuery = {
   searchDays?: number;
 };
 
-const CANONICAL_ISO_Z_WITH_MS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+/**
+ * API入力の日時は「ISO/RFC3339っぽいが揺れる」ことが多いので、Presentation層で canonical に正規化する。
+ * - 許容例: 2026-01-18T00:00Z / 2026-01-18T00:00:00Z / 2026-01-18T00:00:00.000Z / 2026-01-18T00:00:00+09:00
+ * - 返す値: YYYY-MM-DDTHH:mm:ss.SSSZ（必ずZ、ミリ秒あり）
+ */
+function normalizeIsoToCanonicalZ(raw: string): ValidationResult<string> {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return { ok: false, message: 'Invalid datetime' };
+  }
+
+  const date = new Date(trimmed);
+  if (Number.isNaN(date.getTime())) {
+    return { ok: false, message: 'Invalid datetime' };
+  }
+
+  // toISOString() は常に UTC(Z) + ミリ秒付き
+  return { ok: true, value: date.toISOString() };
+}
 
 export function validateCreateProvisionalBookingCommand(
   body: unknown,
@@ -36,12 +54,17 @@ export function validateCreateProvisionalBookingCommand(
   if (!customerName) return { ok: false, message: 'customerName is required' };
   if (!phoneNumber) return { ok: false, message: 'phoneNumber is required' };
 
+  const normalizedStartAt = normalizeIsoToCanonicalZ(startAt);
+  if (!normalizedStartAt.ok) {
+    return { ok: false, message: 'startAt must be a valid ISO datetime string' };
+  }
+
   return {
     ok: true,
     value: {
       ...b,
       carId,
-      startAt,
+      startAt: normalizedStartAt.value,
       durationMinutes,
       customerName,
       phoneNumber,
@@ -84,8 +107,10 @@ export function validateNearestAvailableSlotsQuery(
         ? searchDaysRaw
         : undefined;
 
-  if (from && !CANONICAL_ISO_Z_WITH_MS.test(from)) {
-    return { ok: false, message: 'from must be an ISO string like 2026-01-18T00:00:00.000Z' };
+  const normalizedFrom =
+    from !== undefined ? normalizeIsoToCanonicalZ(from) : ({ ok: true, value: undefined } as const);
+  if (!normalizedFrom.ok) {
+    return { ok: false, message: 'from must be a valid ISO datetime string' };
   }
 
   if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
@@ -110,7 +135,7 @@ export function validateNearestAvailableSlotsQuery(
   return {
     ok: true,
     value: {
-      from,
+      from: normalizedFrom.value,
       durationMinutes,
       limit,
       searchDays,
