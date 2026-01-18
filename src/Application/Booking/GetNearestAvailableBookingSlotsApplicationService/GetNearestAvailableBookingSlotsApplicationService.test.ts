@@ -3,15 +3,17 @@ import { GetNearestAvailableBookingSlotsApplicationService } from './GetNearestA
 import { IBookingCalendarEventQuery } from '../IBookingCalendarEventQuery';
 
 class FakeCalendarEventQuery implements IBookingCalendarEventQuery {
-  constructor(private readonly ranges: { start: number; end: number }[]) {}
+  constructor(
+    private readonly ranges: { start: number; end: number }[],
+    private readonly bookingsCountByDayKey: Record<string, number> = {},
+  ) {}
 
   async listActiveEventTimeRanges(): Promise<{ start: number; end: number }[]> {
     return this.ranges;
   }
   
-  async countActiveEventsOverlappingBusinessHoursByUtcDay(_params: { utcDayKey: string }): Promise<number> {
-    // このテストでは「同日予約数」は別途コントロールしているため、ここは0固定でOK
-    return 0;
+  async countActiveEventsOverlappingBusinessHoursByUtcDay(params: { utcDayKey: string }): Promise<number> {
+    return this.bookingsCountByDayKey[params.utcDayKey] ?? 0;
   }
 }
 
@@ -23,8 +25,14 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
     const bookedStart = Date.parse('2026-01-18T11:00:00.000Z');
     const bookedEnd = Date.parse('2026-01-18T12:00:00.000Z');
 
+    // 重複除外の検証に集中したいので、同日予約あり扱いにして「開始時刻制約(10/14のみ)」を外す
     const svc = new GetNearestAvailableBookingSlotsApplicationService(
-      new FakeCalendarEventQuery([{ start: bookedStart, end: bookedEnd }]),
+      new FakeCalendarEventQuery(
+        [{ start: bookedStart, end: bookedEnd }],
+        {
+          '2026-01-18': 1,
+        },
+      ),
     );
 
     const result = await svc.execute({
@@ -96,7 +104,12 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
     const bookedEnd = Date.parse('2026-01-18T11:00:00.000Z');
 
     const svc = new GetNearestAvailableBookingSlotsApplicationService(
-      new FakeCalendarEventQuery([{ start: bookedStart, end: bookedEnd }]),
+      new FakeCalendarEventQuery(
+        [{ start: bookedStart, end: bookedEnd }],
+        {
+          '2026-01-18': 1,
+        },
+      ),
     );
 
     const result = await svc.execute({
@@ -121,7 +134,12 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
     const bookedEnd = Date.parse('2026-01-18T11:00:00.000Z');
 
     const svc = new GetNearestAvailableBookingSlotsApplicationService(
-      new FakeCalendarEventQuery([{ start: bookedStart, end: bookedEnd }]),
+      new FakeCalendarEventQuery(
+        [{ start: bookedStart, end: bookedEnd }],
+        {
+          '2026-01-18': 1,
+        },
+      ),
     );
 
     const result = await svc.execute({
@@ -140,7 +158,12 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
     const bookedEnd = Date.parse('2026-01-18T11:00:00.000Z');
 
     const svc = new GetNearestAvailableBookingSlotsApplicationService(
-      new FakeCalendarEventQuery([{ start: bookedStart, end: bookedEnd }]),
+      new FakeCalendarEventQuery(
+        [{ start: bookedStart, end: bookedEnd }],
+        {
+          '2026-01-18': 1,
+        },
+      ),
     );
 
     // relaxed(<=5h) かつ 既存予約あり の場合、開始時刻制約(10/14)は外れ「営業時間内ならOK」。

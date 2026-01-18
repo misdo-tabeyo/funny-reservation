@@ -65,10 +65,9 @@ export class GetNearestAvailableBookingSlotsApplicationService {
       timeMax,
     });
 
-    // 「同日の既存予約数（=イベント数）」を日付単位で数えておく
-  // NOTE: 予約の正は Google Calendar とする。
-  //       よって「同日の既存予約数」=「その日の営業時間帯と重なるイベント数」として数える。
-  const bookingCountByDay = countEventsByBusinessDay(eventRanges);
+    // 「同日の既存予約数」は Port の定義に寄せる。
+    // NOTE: ここでは候補枠の dayKey ごとに呼び出すと多くなるため、日単位でキャッシュする。
+    const bookingCountByDay = new Map<string, number>();
 
     const slots: AvailableSlot[] = [];
 
@@ -80,7 +79,13 @@ export class GetNearestAvailableBookingSlotsApplicationService {
 
       // 営業時間・開始時刻制約などのビジネスルールを適用
       const dayKey = toUtcDayKey(candidate.startAt);
-      const existingBookingsCount = bookingCountByDay.get(dayKey) ?? 0;
+      let existingBookingsCount = bookingCountByDay.get(dayKey);
+      if (existingBookingsCount === undefined) {
+        existingBookingsCount = await this.calendarEventQuery.countActiveEventsOverlappingBusinessHoursByUtcDay({
+          utcDayKey: dayKey,
+        });
+        bookingCountByDay.set(dayKey, existingBookingsCount);
+      }
 
       const canBook = BookingSlotRuleDomainService.canBook(candidate, {
         existingBookingsCount,
@@ -118,37 +123,6 @@ function toUtcDayKey(dt: DateTime): string {
   const m = String(d.getUTCMonth() + 1).padStart(2, '0');
   const day = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
-}
-
-function countEventsByBusinessDay(eventRanges: BookingCalendarEventTimeRange[]): Map<string, number> {
-  const map = new Map<string, number>();
-
-  // 「候補が出うる日」だけ数えれば十分だが、ここでは eventRanges から日付集合を作り重なりを数える。
-  // IMPORTANT: 終日予定や前日から跨る予定があるため、「開始日で数える」は誤りになり得る。
-  const dayKeys = new Set<string>();
-  for (const r of eventRanges) {
-    // start日とend日（endは非包含の想定）を最低限押さえる
-    dayKeys.add(toUtcDayKey(DateTime.fromDate(new Date(r.start))));
-    dayKeys.add(toUtcDayKey(DateTime.fromDate(new Date(Math.max(r.end - 1, r.start)))));
-  }
-
-  for (const dayKey of dayKeys) {
-    const { windowStartMs, windowEndMs } = businessHoursWindowUtcMs(dayKey);
-    const count = eventRanges.filter((r) => r.start < windowEndMs && windowStartMs < r.end).length;
-    map.set(dayKey, count);
-  }
-
-  return map;
-}
-
-function businessHoursWindowUtcMs(dayKey: string): { windowStartMs: number; windowEndMs: number } {
-  // dayKey: YYYY-MM-DD
-  const startIso = `${dayKey}T${String(BookingSlotRuleDomainService.BUSINESS_OPEN_HOUR_UTC).padStart(2, '0')}:00:00.000Z`;
-  const endIso = `${dayKey}T${String(BookingSlotRuleDomainService.BUSINESS_CLOSE_HOUR_UTC).padStart(2, '0')}:00:00.000Z`;
-  return {
-    windowStartMs: Date.parse(startIso),
-    windowEndMs: Date.parse(endIso),
-  };
 }
 
 /**
