@@ -46,13 +46,13 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
     const svc = new GetNearestAvailableBookingSlotsApplicationService(new FakeCalendarEventQuery([]));
 
     const result = await svc.execute({
+      // omit searchDays to use default
       from: '2026-01-18T10:00:00.000Z',
       durationMinutes: 60,
-      limit: 3,
-      searchDays: 0, // will be clamped to 1
+      limit: 1,
     });
 
-    // timeMax = from + 1day; so it should return some slots (not empty)
-    expect(result.slots.length).toBeGreaterThan(0);
+    // default searchDays is 14; with no events it should still return at least one slot
+    expect(result.slots.length).toBe(1);
   });
 });

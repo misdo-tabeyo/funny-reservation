@@ -29,7 +29,7 @@ export type GetNearestAvailableBookingSlotsResult = {
 
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 20;
-const DEFAULT_SEARCH_DAYS = 30;
+const DEFAULT_SEARCH_DAYS = 14;
 const MIN_SEARCH_DAYS = 1;
 const MAX_SEARCH_DAYS = 90;
 

@@ -157,15 +157,15 @@
             "name": "limit",
             "in": "query",
             "required": false,
-            "schema": { "type": "integer" },
+            "schema": { "type": "integer", "default": 5, "maximum": 20, "minimum": 1 },
             "description": "How many slots to return (default 5, max 20)"
           },
           {
             "name": "searchDays",
             "in": "query",
             "required": false,
-            "schema": { "type": "integer" },
-            "description": "How many days to look ahead (default 30, max 90)"
+            "schema": { "type": "integer", "default": 14, "maximum": 90, "minimum": 1 },
+            "description": "How many days to look ahead (default 14, max 90)"
           }
         ],
         "responses": {
