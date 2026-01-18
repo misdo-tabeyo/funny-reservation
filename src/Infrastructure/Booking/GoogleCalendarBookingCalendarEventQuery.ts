@@ -28,4 +28,35 @@ export class GoogleCalendarBookingCalendarEventQuery implements IBookingCalendar
       .map((e) => toGoogleCalendarEventTimestampRange(e))
       .filter((r): r is { start: number; end: number } => r !== null);
   }
+
+  async countActiveEventsOverlappingBusinessHoursByUtcDay(params: {
+    utcDayKey: string;
+  }): Promise<number> {
+    const { utcDayKey } = params;
+
+    // UTC 営業時間窓
+    const timeMin = `${utcDayKey}T10:00:00.000Z`;
+    const timeMax = `${utcDayKey}T18:00:00.000Z`;
+
+    // listEvents は「開始が timeMin〜timeMax のイベント」中心のため、
+    // 前日から跨るイベントも拾えるように検索窓を少し広げる。
+    const searchMin = Date.parse(timeMin) - 24 * 60 * 60 * 1000;
+    const searchMax = Date.parse(timeMax);
+
+    const events = await this.client.listEvents({
+      calendarId: this.calendarId,
+      timeMin: new Date(searchMin).toISOString(),
+      timeMax: new Date(searchMax).toISOString(),
+    });
+
+    const activeEvents = events.filter((e) => e.status !== 'cancelled');
+
+    const windowStart = Date.parse(timeMin);
+    const windowEnd = Date.parse(timeMax);
+
+    return activeEvents
+      .map((e) => toGoogleCalendarEventTimestampRange(e))
+      .filter((r): r is { start: number; end: number } => r !== null)
+      .filter((r) => r.start < windowEnd && windowStart < r.end).length;
+  }
 }

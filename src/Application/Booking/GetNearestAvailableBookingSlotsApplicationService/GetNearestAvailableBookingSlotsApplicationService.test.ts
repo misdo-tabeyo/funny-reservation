@@ -8,6 +8,11 @@ class FakeCalendarEventQuery implements IBookingCalendarEventQuery {
   async listActiveEventTimeRanges(): Promise<{ start: number; end: number }[]> {
     return this.ranges;
   }
+  
+  async countActiveEventsOverlappingBusinessHoursByUtcDay(_params: { utcDayKey: string }): Promise<number> {
+    // このテストでは「同日予約数」は別途コントロールしているため、ここは0固定でOK
+    return 0;
+  }
 }
 
 describe('GetNearestAvailableBookingSlotsApplicationService', () => {
