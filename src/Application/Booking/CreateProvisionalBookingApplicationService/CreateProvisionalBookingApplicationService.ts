@@ -11,8 +11,11 @@ export type CreateProvisionalBookingCommand = {
   startAt: string; // ISO (ミリ秒+Z必須)
   durationMinutes: number;
 
+  // 業務必須（仮予約でも必須）
+  customerName: string;
+  phoneNumber: string;
+
   // カレンダー表示用（任意）
-  customerName?: string;
   carModelName?: string;
   menuLabel?: string; // 例: "リア5面"
   channel?: string;   // 例: "LINE"
@@ -61,13 +64,14 @@ export class CreateProvisionalBookingApplicationService {
     const parts: string[] = ['【仮】'];
     if (command.carModelName) parts.push(command.carModelName);
     if (command.menuLabel) parts.push(command.menuLabel);
-    if (command.customerName) parts.push(`（${command.customerName}）`);
+    parts.push(`（${command.customerName}）`);
     return parts.join(' ').trim();
   }
 
   private buildDescription(command: CreateProvisionalBookingCommand): string | undefined {
     const lines: string[] = [];
-    if (command.customerName) lines.push(`氏名: ${command.customerName}`);
+    lines.push(`氏名: ${command.customerName}`);
+    lines.push(`電話番号: ${command.phoneNumber}`);
     if (command.carModelName) lines.push(`車種: ${command.carModelName}`);
     if (command.menuLabel) lines.push(`内容: ${command.menuLabel}`);
     if (command.channel) lines.push(`受付: ${command.channel}`);

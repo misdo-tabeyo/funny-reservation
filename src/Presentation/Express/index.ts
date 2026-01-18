@@ -19,6 +19,8 @@ import { GoogleCalendarClient } from '../../Infrastructure/GoogleCalendar/Google
 
 import path from 'node:path';
 
+import { validateCreateProvisionalBookingCommand } from './requestValidation';
+
 const app = express();
 const port = 8080;
 
@@ -144,7 +146,13 @@ app.get('/booking/availability', requireAuth, async (req: Request, res: Response
  */
 app.post('/booking/draft', requireAuth, async (req: Request, res: Response) => {
   try {
-    const requestBody = req.body as CreateProvisionalBookingCommand;
+    const validated = validateCreateProvisionalBookingCommand(req.body);
+    if (!validated.ok) {
+      res.status(400).json({ message: validated.message });
+      return;
+    }
+
+    const requestBody: CreateProvisionalBookingCommand = validated.value;
 
     const duplicationCheckDomainService = buildDuplicationCheckDomainService();
     const bookingCalendarEventRepository = buildGoogleCalendarBookingCalendarEventRepository();

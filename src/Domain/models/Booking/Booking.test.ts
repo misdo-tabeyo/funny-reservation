@@ -9,6 +9,8 @@ import { Duration } from './TimeRange/Duration/Duration';
 import { DateTime } from 'Domain/models/shared/DateTime/DateTime';
 import { Money } from 'Domain/models/shared/Money/Money';
 import { CalendarEventId } from './CalendarEventId/CalendarEventId';
+import { Name } from './Name/Name';
+import { PhoneNumber } from './PhoneNumber/PhoneNumber';
 
 describe('Booking', () => {
   const bookingId = new BookingId('bookingId_01');
@@ -26,10 +28,15 @@ describe('Booking', () => {
 
   const calendarEventId = new CalendarEventId('calendarEventId_01');
 
+  const customerName = new Name('山田太郎');
+  const phoneNumber = new PhoneNumber('090-1234-5678');
+
   describe('create', () => {
     it('初期ステータスは Draft を強制する', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -44,6 +51,8 @@ describe('Booking', () => {
     it('新規作成時は calendarEventId が未紐づけ（null）', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -59,6 +68,8 @@ describe('Booking', () => {
 
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds,
@@ -79,6 +90,8 @@ describe('Booking', () => {
       expect(() =>
         Booking.create({
           bookingId,
+          customerName,
+          phoneNumber,
           carId,
           menuId,
           optionIds: [option1, option1],
@@ -91,6 +104,8 @@ describe('Booking', () => {
     it('getter で渡した VO / 値を取得できる', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -105,6 +120,22 @@ describe('Booking', () => {
       expect(booking.price.equals(price)).toBeTruthy();
       expect(booking.optionIds[0].equals(option1)).toBeTruthy();
     });
+
+    it('customerName / phoneNumber を指定して生成できる', () => {
+      const booking = Booking.create({
+        bookingId,
+        customerName,
+        phoneNumber,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+      });
+
+      expect(booking.customerName.equals(customerName)).toBe(true);
+      expect(booking.phoneNumber.equals(phoneNumber)).toBe(true);
+    });
   });
 
   describe('reconstruct', () => {
@@ -113,6 +144,8 @@ describe('Booking', () => {
 
       const booking = Booking.reconstruct({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -129,6 +162,8 @@ describe('Booking', () => {
     it('calendarEventId を指定して再構築できる', () => {
       const booking = Booking.reconstruct({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -147,6 +182,8 @@ describe('Booking', () => {
       expect(() =>
         Booking.reconstruct({
           bookingId,
+          customerName,
+          phoneNumber,
           carId,
           menuId,
           optionIds: [option1, option1],
@@ -163,6 +200,8 @@ describe('Booking', () => {
     it('Draft のとき changePrice() できる', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -179,6 +218,8 @@ describe('Booking', () => {
     it('Confirmed のとき changePrice() できず例外', () => {
       const booking = Booking.reconstruct({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -195,6 +236,8 @@ describe('Booking', () => {
     it('Draft のとき reschedule() できる', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -215,6 +258,8 @@ describe('Booking', () => {
     it('Confirmed のとき reschedule() できず例外', () => {
       const booking = Booking.reconstruct({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -237,6 +282,8 @@ describe('Booking', () => {
     it('Draft のとき carId / menuId / optionIds を変更できる', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -261,6 +308,8 @@ describe('Booking', () => {
     it('Draft のとき changeOptionIds() は防御的コピーされ、外部の配列変更の影響を受けない', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -281,6 +330,8 @@ describe('Booking', () => {
     it('Draft のとき changeOptionIds() で重複を渡すと例外', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -294,6 +345,8 @@ describe('Booking', () => {
     it('Confirmed のとき carId / menuId / optionIds を変更できず例外', () => {
       const booking = Booking.reconstruct({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -316,12 +369,55 @@ describe('Booking', () => {
         'optionIdsを変更できません（status=Confirmed）',
       );
     });
+
+    it('Draft のとき customerName / phoneNumber を変更できる', () => {
+      const booking = Booking.create({
+        bookingId,
+        customerName,
+        phoneNumber,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+      });
+
+      booking.changeCustomerName(new Name('山田太郎'));
+      booking.changePhoneNumber(new PhoneNumber('090-1234-5678'));
+
+      expect(booking.customerName.value).toBe('山田太郎');
+      expect(booking.phoneNumber.value).toBe('+819012345678');
+    });
+
+    it('Confirmed のとき customerName / phoneNumber を変更できず例外', () => {
+      const booking = Booking.reconstruct({
+        bookingId,
+        customerName,
+        phoneNumber,
+        carId,
+        menuId,
+        optionIds: [option1],
+        timeRange,
+        price,
+        status: BookingStatus.confirmed(),
+        calendarEventId: null,
+      });
+
+      expect(() => booking.changeCustomerName(new Name('山田太郎'))).toThrow(
+        'customerNameを変更できません（status=Confirmed）',
+      );
+      expect(() => booking.changePhoneNumber(new PhoneNumber('090-1234-5678'))).toThrow(
+        'phoneNumberを変更できません（status=Confirmed）',
+      );
+    });
   });
 
   describe('calendarEvent linkage', () => {
     it('Confirmed のとき linkCalendarEvent() で紐づけできる', () => {
       const booking = Booking.reconstruct({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -339,6 +435,8 @@ describe('Booking', () => {
     it('Draft のとき linkCalendarEvent() できず例外', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -354,6 +452,8 @@ describe('Booking', () => {
     it('すでに紐づいている場合 linkCalendarEvent() できず例外', () => {
       const booking = Booking.reconstruct({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -371,6 +471,8 @@ describe('Booking', () => {
     it('Completed のとき unlinkCalendarEvent() できず例外', () => {
       const booking = Booking.reconstruct({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -388,6 +490,8 @@ describe('Booking', () => {
     it('Confirmed のとき unlinkCalendarEvent() で解除できる（nullになる）', () => {
       const booking = Booking.reconstruct({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -407,6 +511,8 @@ describe('Booking', () => {
     it('遷移可能な場合はステータスが更新される（Draft -> Confirmed）', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -422,6 +528,8 @@ describe('Booking', () => {
     it('遷移不可能な場合は例外（Draft -> Completed）', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -439,6 +547,8 @@ describe('Booking', () => {
     it('confirm() は Confirmed に遷移する', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -454,6 +564,8 @@ describe('Booking', () => {
     it('cancel() は Cancelled に遷移する（Draft -> Cancelled）', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -469,6 +581,8 @@ describe('Booking', () => {
     it('complete() は Completed に遷移する（Confirmed -> Completed）', () => {
       const confirmed = Booking.reconstruct({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -486,6 +600,8 @@ describe('Booking', () => {
     it('complete() は Draft からは遷移できず例外（Draft -> Completed）', () => {
       const booking = Booking.create({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],
@@ -501,6 +617,8 @@ describe('Booking', () => {
     it('cancel() は Completed からは遷移できず例外（Completed -> Cancelled）', () => {
       const completed = Booking.reconstruct({
         bookingId,
+        customerName,
+        phoneNumber,
         carId,
         menuId,
         optionIds: [option1],

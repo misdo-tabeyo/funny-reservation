@@ -105,6 +105,14 @@
               }
             }
           },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -143,12 +151,13 @@
       },
       "CreateProvisionalBookingCommand": {
         "type": "object",
-        "required": ["carId", "startAt", "durationMinutes"],
+        "required": ["carId", "startAt", "durationMinutes", "customerName", "phoneNumber"],
         "properties": {
           "carId": { "type": "string" },
           "startAt": { "type": "string" },
           "durationMinutes": { "type": "integer" },
           "customerName": { "type": "string" },
+          "phoneNumber": { "type": "string" },
           "carModelName": { "type": "string" },
           "menuLabel": { "type": "string" },
           "channel": { "type": "string" }

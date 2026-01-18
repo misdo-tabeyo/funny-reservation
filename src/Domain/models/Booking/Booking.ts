@@ -7,6 +7,8 @@ import { Money } from 'Domain/models/shared/Money/Money';
 import { BookingStatus } from './BookingStatus/BookingStatus';
 import { BookingLifecycle } from './BookingLifecycle';
 import { CalendarEventId } from './CalendarEventId/CalendarEventId';
+import { Name } from './Name/Name';
+import { PhoneNumber } from './PhoneNumber/PhoneNumber';
 
 export class Booking {
   private _carId: CarId;
@@ -15,12 +17,16 @@ export class Booking {
   private _timeRange: TimeRange;
   private _price: Money;
   private _status: BookingStatus;
+  private _customerName: Name;
+  private _phoneNumber: PhoneNumber;
 
   // 集約外は「IDで参照」
   private _calendarEventId: CalendarEventId | null;
 
   private constructor(
     private readonly _bookingId: BookingId,
+    customerName: Name,
+    phoneNumber: PhoneNumber,
     carId: CarId,
     menuId: MenuId,
     optionIds: OptionId[],
@@ -29,6 +35,8 @@ export class Booking {
     status: BookingStatus,
     calendarEventId: CalendarEventId | null,
   ) {
+    this._customerName = customerName;
+    this._phoneNumber = phoneNumber;
     this._carId = carId;
     this._menuId = menuId;
     this._timeRange = timeRange;
@@ -50,6 +58,8 @@ export class Booking {
   // ------------------------
   static create(params: {
     bookingId: BookingId;
+    customerName: Name;
+    phoneNumber: PhoneNumber;
     carId: CarId;
     menuId: MenuId;
     optionIds: OptionId[];
@@ -58,6 +68,8 @@ export class Booking {
   }): Booking {
     return new Booking(
       params.bookingId,
+      params.customerName,
+      params.phoneNumber,
       params.carId,
       params.menuId,
       params.optionIds,
@@ -73,6 +85,8 @@ export class Booking {
   // ------------------------
   static reconstruct(params: {
     bookingId: BookingId;
+    customerName: Name;
+    phoneNumber: PhoneNumber;
     carId: CarId;
     menuId: MenuId;
     optionIds: OptionId[];
@@ -83,6 +97,8 @@ export class Booking {
   }): Booking {
     return new Booking(
       params.bookingId,
+      params.customerName,
+      params.phoneNumber,
       params.carId,
       params.menuId,
       params.optionIds,
@@ -140,6 +156,16 @@ export class Booking {
     this.assertDraft('optionIdsを変更できません');
     this.validateOptionIds(next);
     this._optionIds = [...next]; // 防御的コピー
+  }
+
+  changeCustomerName(next: Name): void {
+    this.assertDraft('customerNameを変更できません');
+    this._customerName = next;
+  }
+
+  changePhoneNumber(next: PhoneNumber): void {
+    this.assertDraft('phoneNumberを変更できません');
+    this._phoneNumber = next;
   }
 
   // ------------------------
@@ -212,6 +238,14 @@ export class Booking {
   // ------------------------
   get bookingId(): BookingId {
     return this._bookingId;
+  }
+
+  get customerName(): Name {
+    return this._customerName;
+  }
+
+  get phoneNumber(): PhoneNumber {
+    return this._phoneNumber;
   }
 
   get carId(): CarId {

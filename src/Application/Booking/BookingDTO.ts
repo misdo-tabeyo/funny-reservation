@@ -2,6 +2,8 @@ import { Booking } from 'Domain/models/Booking/Booking';
 
 export type BookingDTOProps = {
   bookingId: string;
+  customerName: string;
+  phoneNumber: string;
   carId: string;
   menuId: string;
   optionIds: string[];
@@ -19,6 +21,8 @@ export class BookingDTO {
   static from(booking: Booking): BookingDTO {
     return new BookingDTO({
       bookingId: booking.bookingId.value,
+      customerName: booking.customerName.value,
+      phoneNumber: booking.phoneNumber.value,
       carId: booking.carId.value,
       menuId: booking.menuId.value,
       optionIds: booking.optionIds.map((o) => o.value),
