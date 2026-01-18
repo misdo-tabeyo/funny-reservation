@@ -30,7 +30,8 @@
     "/booking/availability": {
       "get": {
         "operationId": "checkBookingAvailability",
-        "summary": "Check booking slot availability",
+        "summary": "Check booking eligibility (bookable)",
+        "description": "指定枠が予約可能（bookable）かを判定します。予約可能の定義は『予約枠ルールを満たす + Googleカレンダー（正）に重複する予定がない』です。予約不可の場合は 409 を返し、reasons に理由（診断用）を入れます。時間はUTC(入力ISO/RFC3339、返却canonical UTC)。",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
@@ -50,10 +51,18 @@
         ],
         "responses": {
           "200": {
-            "description": "Availability result",
+            "description": "Booking is bookable",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CheckBookingSlotAvailabilityResult" }
+                "schema": { "$ref": "#/components/schemas/BookingEligibilityResult" }
+              }
+            }
+          },
+          "409": {
+            "description": "Booking is not bookable",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BookingEligibilityResult" }
               }
             }
           },
@@ -215,11 +224,25 @@
       }
     },
     "schemas": {
-      "CheckBookingSlotAvailabilityResult": {
+      "BookingEligibilityResult": {
         "type": "object",
-        "required": ["available"],
+        "required": ["bookable", "reasons"],
         "properties": {
-          "available": { "type": "boolean" }
+          "bookable": { "type": "boolean" },
+          "reasons": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "予約不可の理由（診断用）。予約可能の場合は空配列。"
+          },
+          "normalized": {
+            "type": "object",
+            "required": ["startAt", "endAt", "durationMinutes"],
+            "properties": {
+              "startAt": { "type": "string" },
+              "endAt": { "type": "string" },
+              "durationMinutes": { "type": "integer" }
+            }
+          }
         }
       },
       "CreateProvisionalBookingCommand": {

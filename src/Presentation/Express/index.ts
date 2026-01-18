@@ -2,9 +2,9 @@ import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 
 import {
-  CheckBookingSlotAvailabilityApplicationService,
-  CheckBookingSlotAvailabilityQuery,
-} from '../../Application/Booking/CheckBookingSlotAvailabilityApplicationService/CheckBookingSlotAvailabilityApplicationService';
+  CheckBookingAvailabilityApplicationService,
+  CheckBookingAvailabilityQuery,
+} from '../../Application/Booking/CheckBookingAvailabilityApplicationService/CheckBookingAvailabilityApplicationService';
 
 import {
   CreateProvisionalBookingApplicationService,
@@ -146,15 +146,25 @@ app.get('/booking/availability', requireAuth, async (req: Request, res: Response
       return;
     }
 
-    const query: CheckBookingSlotAvailabilityQuery = {
+    const query: CheckBookingAvailabilityQuery = {
       startAt: validated.value.startAt,
       durationMinutes: validated.value.durationMinutes,
     };
 
-    const availabilityQuery = buildGoogleCalendarAvailabilityQuery();
-    const applicationService = new CheckBookingSlotAvailabilityApplicationService(availabilityQuery);
+    const calendarEventQuery = buildGoogleCalendarBookingCalendarEventQuery();
+    const duplicationCheckDomainService = buildDuplicationCheckDomainService();
+
+    const applicationService = new CheckBookingAvailabilityApplicationService(
+      calendarEventQuery,
+      duplicationCheckDomainService,
+    );
 
     const result = await applicationService.execute(query);
+    if (!result.bookable) {
+      res.status(409).json(result);
+      return;
+    }
+
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });
