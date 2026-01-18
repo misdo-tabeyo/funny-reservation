@@ -1,6 +1,7 @@
 import { DateTime } from 'Domain/models/shared/DateTime/DateTime';
 import { Duration } from 'Domain/models/Booking/TimeRange/Duration/Duration';
 import { TimeRange } from 'Domain/models/Booking/TimeRange/TimeRange';
+import { BookingSlotRuleDomainService } from 'Domain/services/Booking/BookingSlotRuleDomainService/BookingSlotRuleDomainService';
 import {
   IBookingCalendarEventQuery,
   BookingCalendarEventTimeRange,
@@ -45,9 +46,9 @@ export class GetNearestAvailableBookingSlotsApplicationService {
   constructor(private readonly calendarEventQuery: IBookingCalendarEventQuery) {}
 
   async execute(query: GetNearestAvailableBookingSlotsQuery): Promise<GetNearestAvailableBookingSlotsResult> {
-    if (!Number.isFinite(query.durationMinutes)) throw new Error('durationMinutes is required');
+    if (!Number.isFinite(query.durationMinutes)) throw new Error('durationMinutes は必須です');
 
-    // validate via Domain objects
+    // Domainオブジェクトで validate
     const duration = new Duration(query.durationMinutes);
 
     const limit = clampInt(query.limit ?? DEFAULT_LIMIT, 1, MAX_LIMIT);
@@ -64,6 +65,11 @@ export class GetNearestAvailableBookingSlotsApplicationService {
       timeMax,
     });
 
+    // 「同日の既存予約数（=イベント数）」を日付単位で数えておく
+  // NOTE: 予約の正は Google Calendar とする。
+  //       よって「同日の既存予約数」=「その日の営業時間帯と重なるイベント数」として数える。
+  const bookingCountByDay = countEventsByBusinessDay(eventRanges);
+
     const slots: AvailableSlot[] = [];
 
     // 候補は「開始 = 1時間単位」。duration は 60,n*60 OK。
@@ -71,6 +77,18 @@ export class GetNearestAvailableBookingSlotsApplicationService {
     while (cursor.isBefore(timeMax) && slots.length < limit) {
       // TimeRange の validate があるので、常に hour-aligned の cursor を渡す
       const candidate = new TimeRange(cursor, duration);
+
+      // 営業時間・開始時刻制約などのビジネスルールを適用
+      const dayKey = toUtcDayKey(candidate.startAt);
+      const existingBookingsCount = bookingCountByDay.get(dayKey) ?? 0;
+
+      const canBook = BookingSlotRuleDomainService.canBook(candidate, {
+        existingBookingsCount,
+      });
+      if (!canBook.ok) {
+        cursor = cursor.addMinutes(60);
+        continue;
+      }
 
       const overlaps = hasOverlap(candidate, eventRanges);
       if (!overlaps) {
@@ -92,6 +110,45 @@ function clampInt(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
   const v = Math.trunc(value);
   return Math.max(min, Math.min(max, v));
+}
+
+function toUtcDayKey(dt: DateTime): string {
+  const d = dt.toDate();
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function countEventsByBusinessDay(eventRanges: BookingCalendarEventTimeRange[]): Map<string, number> {
+  const map = new Map<string, number>();
+
+  // 「候補が出うる日」だけ数えれば十分だが、ここでは eventRanges から日付集合を作り重なりを数える。
+  // IMPORTANT: 終日予定や前日から跨る予定があるため、「開始日で数える」は誤りになり得る。
+  const dayKeys = new Set<string>();
+  for (const r of eventRanges) {
+    // start日とend日（endは非包含の想定）を最低限押さえる
+    dayKeys.add(toUtcDayKey(DateTime.fromDate(new Date(r.start))));
+    dayKeys.add(toUtcDayKey(DateTime.fromDate(new Date(Math.max(r.end - 1, r.start)))));
+  }
+
+  for (const dayKey of dayKeys) {
+    const { windowStartMs, windowEndMs } = businessHoursWindowUtcMs(dayKey);
+    const count = eventRanges.filter((r) => r.start < windowEndMs && windowStartMs < r.end).length;
+    map.set(dayKey, count);
+  }
+
+  return map;
+}
+
+function businessHoursWindowUtcMs(dayKey: string): { windowStartMs: number; windowEndMs: number } {
+  // dayKey: YYYY-MM-DD
+  const startIso = `${dayKey}T${String(BookingSlotRuleDomainService.BUSINESS_OPEN_HOUR_UTC).padStart(2, '0')}:00:00.000Z`;
+  const endIso = `${dayKey}T${String(BookingSlotRuleDomainService.BUSINESS_CLOSE_HOUR_UTC).padStart(2, '0')}:00:00.000Z`;
+  return {
+    windowStartMs: Date.parse(startIso),
+    windowEndMs: Date.parse(endIso),
+  };
 }
 
 /**

@@ -137,6 +137,7 @@
       "get": {
         "operationId": "getNearestAvailableBookingSlots",
         "summary": "Get nearest available booking slots",
+        "description": "直近の予約可能枠を返します。\n\nビジネスルール概要:\n- 営業時間は 10:00〜18:00（開始>=10:00 かつ 終了<=18:00）\n- 同日の既存予約数と施工時間(durationMinutes)により開始可能時刻が制約されます\n  - 施工時間が5時間(300分)を超える場合: 同日の予約が0件なら 10/11/12時開始のみ、同日に予約がある場合は不可\n  - 施工時間が5時間以下の場合: 同日の予約が0件なら 10時または14時開始のみ、同日に予約がある場合は営業時間内なら可\n\n※時間はAPI内部ではUTCで扱います（入力はISO/RFC3339、返却は canonical UTC(Z+ms)）。",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
