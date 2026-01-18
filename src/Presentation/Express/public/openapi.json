@@ -30,7 +30,7 @@
     "/booking/availability": {
       "get": {
         "operationId": "checkBookingAvailability",
-        "summary": "Check booking slot availability (calendar-wide)",
+        "summary": "Check booking slot availability",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
@@ -136,7 +136,7 @@
     "/booking/available-slots/nearest": {
       "get": {
         "operationId": "getNearestAvailableBookingSlots",
-        "summary": "Get nearest available booking slots (calendar-wide)",
+        "summary": "Get nearest available booking slots",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
