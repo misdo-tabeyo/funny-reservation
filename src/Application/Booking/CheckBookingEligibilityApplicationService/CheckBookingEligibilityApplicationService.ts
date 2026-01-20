@@ -6,7 +6,7 @@ import { BookingSlotRuleDomainService } from 'Domain/services/Booking/BookingSlo
 import { IBookingCalendarEventQuery } from 'Application/Booking/IBookingCalendarEventQuery';
 
 export type CheckBookingEligibilityQuery = {
-  startAt: string; // canonical ISO (Z + ms)
+  startAt: string; // canonical ISO (+09:00 + ms)
   durationMinutes: number;
 };
 
@@ -41,9 +41,9 @@ export class CheckBookingEligibilityApplicationService {
     const duration = new Duration(query.durationMinutes);
     const timeRange = new TimeRange(startAt, duration);
 
-    const utcDayKey = toUtcDayKey(timeRange.startAt);
-    const existingBookingsCount = await this.calendarEventQuery.countActiveEventsOverlappingBusinessHoursByUtcDay({
-      utcDayKey,
+    const jstDayKey = toJstDayKey(timeRange.startAt);
+    const existingBookingsCount = await this.calendarEventQuery.countActiveEventsOverlappingBusinessHoursByJstDay({
+      jstDayKey,
     });
 
     const rule = BookingSlotRuleDomainService.canBook(timeRange, { existingBookingsCount });
@@ -84,10 +84,18 @@ export class CheckBookingEligibilityApplicationService {
   }
 }
 
-function toUtcDayKey(dt: DateTime): string {
-  const d = dt.toDate();
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+function toJstDayKey(dt: DateTime): string {
+  const parts = toJstDateParts(dt.toTimestamp());
+  const m = String(parts.month).padStart(2, '0');
+  const day = String(parts.day).padStart(2, '0');
+  return `${parts.year}-${m}-${day}`;
+}
+
+function toJstDateParts(timestampMs: number): { year: number; month: number; day: number } {
+  const d = new Date(timestampMs + 9 * 60 * 60 * 1000);
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+  };
 }

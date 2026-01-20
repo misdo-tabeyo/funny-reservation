@@ -8,7 +8,7 @@ describe('validateCreateProvisionalBookingCommand', () => {
   it('必須項目が揃っていれば ok=true', () => {
     const result = validateCreateProvisionalBookingCommand({
       carId: 'car-1',
-      startAt: '2024-01-01T09:00:00.000Z',
+      startAt: '2024-01-01T09:00:00.000+09:00',
       durationMinutes: 60,
       customerName: '山田太郎',
       phoneNumber: '090-1234-5678',
@@ -24,10 +24,10 @@ describe('validateCreateProvisionalBookingCommand', () => {
     expect(result.value.phoneNumber).toBe('090-1234-5678');
   });
 
-  it('startAt が +09:00 でも canonical(Z+ms) に正規化される', () => {
+  it('startAt が +09:00 なら canonical(+09:00) に正規化される', () => {
     const result = validateCreateProvisionalBookingCommand({
       carId: 'car-1',
-      startAt: '2024-01-01T09:00:00+09:00',
+        startAt: '2024-01-01T09:00:00.000+09:00',
       durationMinutes: 60,
       customerName: '山田太郎',
       phoneNumber: '090-1234-5678',
@@ -36,13 +36,13 @@ describe('validateCreateProvisionalBookingCommand', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    expect(result.value.startAt).toBe('2024-01-01T00:00:00.000Z');
+    expect(result.value.startAt).toBe('2024-01-01T09:00:00.000+09:00');
   });
 
   it('customerName が空なら ok=false', () => {
     const result = validateCreateProvisionalBookingCommand({
       carId: 'car-1',
-      startAt: '2024-01-01T09:00:00.000Z',
+        startAt: '2024-01-01T09:00:00.000+09:00',
       durationMinutes: 60,
       customerName: '   ',
       phoneNumber: '090-1234-5678',
@@ -54,7 +54,7 @@ describe('validateCreateProvisionalBookingCommand', () => {
   it('phoneNumber が無いなら ok=false', () => {
     const result = validateCreateProvisionalBookingCommand({
       carId: 'car-1',
-      startAt: '2024-01-01T09:00:00.000Z',
+      startAt: '2024-01-01T09:00:00.000+09:00',
       durationMinutes: 60,
       customerName: '山田太郎',
     });
@@ -66,7 +66,7 @@ describe('validateCreateProvisionalBookingCommand', () => {
 describe('validateNearestAvailableSlotsQuery', () => {
   it('必須項目が揃っていれば ok=true', () => {
     const result = validateNearestAvailableSlotsQuery({
-      from: '2026-01-18T00:00:00.000Z',
+      from: '2026-01-18T10:00:00.000+09:00',
       durationMinutes: '60',
       limit: '5',
       searchDays: '30',
@@ -76,23 +76,23 @@ describe('validateNearestAvailableSlotsQuery', () => {
     if (!result.ok) return;
 
     expect(result.value).toEqual({
-      from: '2026-01-18T00:00:00.000Z',
+        from: '2026-01-18T10:00:00.000+09:00',
       durationMinutes: 60,
       limit: 5,
       searchDays: 30,
     });
   });
 
-  it('from が秒/ミリ秒省略でも canonical(Z+ms) に正規化される', () => {
+  it('from が秒/ミリ秒省略でも canonical(+09:00) に正規化される', () => {
     const result = validateNearestAvailableSlotsQuery({
-      from: '2026-01-18T00:00:00Z',
+      from: '2026-01-18T10:00+09:00',
       durationMinutes: '60',
     });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    expect(result.value.from).toBe('2026-01-18T00:00:00.000Z');
+    expect(result.value.from).toBe('2026-01-18T10:00:00.000+09:00');
   });
 
   it('from が不正なら ok=false', () => {
@@ -122,7 +122,7 @@ describe('validateNearestAvailableSlotsQuery', () => {
 describe('validateCheckAvailabilityQuery', () => {
   it('必須項目が揃っていれば ok=true（startAtはcanonicalに正規化）', () => {
     const result = validateCheckAvailabilityQuery({
-      startAt: '2024-01-01T09:00:00+09:00',
+        startAt: '2024-01-01T09:00:00.000+09:00',
       durationMinutes: '60',
     });
 
@@ -130,7 +130,7 @@ describe('validateCheckAvailabilityQuery', () => {
     if (!result.ok) return;
 
     expect(result.value).toEqual({
-      startAt: '2024-01-01T00:00:00.000Z',
+        startAt: '2024-01-01T09:00:00.000+09:00',
       durationMinutes: 60,
     });
   });
@@ -149,7 +149,7 @@ describe('validateCheckAvailabilityQuery', () => {
 
   it('durationMinutes が60の倍数でなければ ok=false', () => {
     const result = validateCheckAvailabilityQuery({
-      startAt: '2024-01-01T00:00:00.000Z',
+        startAt: '2024-01-01T00:00:00.000+09:00',
       durationMinutes: '90',
     });
 

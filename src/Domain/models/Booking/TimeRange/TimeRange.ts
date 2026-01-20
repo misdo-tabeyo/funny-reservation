@@ -52,15 +52,25 @@ export class TimeRange extends ValueObject<TimeRangeValue, 'TimeRange'> {
       throw new Error('TimeRangeの値が不正です');
     }
 
-    // 予約は1時間単位 → 開始も “ちょうど00分” に固定しておく
-    const start = value.startAt.toDate();
-    const isHourAligned =
-      start.getUTCMinutes() === 0 &&
-      start.getUTCSeconds() === 0 &&
-      start.getUTCMilliseconds() === 0;
+    // 予約は1時間単位 → 開始も “ちょうど00分” に固定しておく（JST 기준）
+    const parts = toJstParts(value.startAt.toTimestamp());
+    const isHourAligned = parts.minute === 0 && parts.second === 0 && parts.millisecond === 0;
 
     if (!isHourAligned) {
       throw new Error('TimeRangeの開始時刻は1時間単位で指定する必要があります');
     }
   }
+}
+
+function toJstParts(timestampMs: number): {
+  minute: number;
+  second: number;
+  millisecond: number;
+} {
+  const d = new Date(timestampMs + 9 * 60 * 60 * 1000);
+  return {
+    minute: d.getUTCMinutes(),
+    second: d.getUTCSeconds(),
+    millisecond: d.getUTCMilliseconds(),
+  };
 }

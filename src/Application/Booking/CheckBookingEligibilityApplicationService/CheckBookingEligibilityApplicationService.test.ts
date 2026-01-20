@@ -14,7 +14,7 @@ class FakeCalendarEventQuery implements IBookingCalendarEventQuery {
     return this.ranges;
   }
 
-  async countActiveEventsOverlappingBusinessHoursByUtcDay(params: { utcDayKey: string }): Promise<number> {
+  async countActiveEventsOverlappingBusinessHoursByJstDay(params: { jstDayKey: string }): Promise<number> {
     void params;
     return this.dayCount;
   }
@@ -38,7 +38,7 @@ describe('CheckBookingEligibilityApplicationService', () => {
     );
 
     const result = await svc.execute({
-      startAt: '2026-01-18T09:00:00.000Z',
+      startAt: '2026-01-18T09:00:00.000+09:00',
       durationMinutes: 60,
     });
 
@@ -53,7 +53,7 @@ describe('CheckBookingEligibilityApplicationService', () => {
     );
 
     const result = await svc.execute({
-      startAt: '2026-01-18T14:00:00.000Z',
+      startAt: '2026-01-18T14:00:00.000+09:00',
       durationMinutes: 60,
     });
 
@@ -68,7 +68,7 @@ describe('CheckBookingEligibilityApplicationService', () => {
     );
 
     const result = await svc.execute({
-      startAt: '2026-01-18T11:00:00.000Z',
+      startAt: '2026-01-18T11:00:00.000+09:00',
       durationMinutes: 60,
     });
 

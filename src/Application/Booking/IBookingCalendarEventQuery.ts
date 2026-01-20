@@ -28,11 +28,11 @@ export interface IBookingCalendarEventQuery {
    *
    * 定義:
    * - 予約の正は Google Calendar とする
-   * - 「同日の既存予約数」=「その日(UTC)の営業時間帯(10:00-18:00Z)と重なるイベント数」
+   * - 「同日の既存予約数」=「その日(JST)の営業時間帯(10:00-18:00+09:00)と重なるイベント数」
    * - cancelled は除外する
    */
-  countActiveEventsOverlappingBusinessHoursByUtcDay(params: {
-    /** YYYY-MM-DD (UTC) */
-    utcDayKey: string;
+  countActiveEventsOverlappingBusinessHoursByJstDay(params: {
+    /** YYYY-MM-DD (JST) */
+    jstDayKey: string;
   }): Promise<number>;
 }

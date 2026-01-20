@@ -30,7 +30,7 @@ class FakeCalendarEventQuery implements IBookingCalendarEventQuery {
   constructor(private readonly existingBookingsCount: number) {}
 
   // eslint-disable-next-line @typescript-eslint/require-await
-  async countActiveEventsOverlappingBusinessHoursByUtcDay(): Promise<number> {
+  async countActiveEventsOverlappingBusinessHoursByJstDay(): Promise<number> {
     return this.existingBookingsCount;
   }
 }
@@ -54,7 +54,7 @@ describe('CreateProvisionalBookingApplicationService', () => {
     await expect(
       svc.execute({
         carId: 'car-0000001',
-        startAt: '2026-01-18T09:00:00.000Z',
+        startAt: '2026-01-18T09:00:00.000+09:00',
         durationMinutes: 60,
         customerName: '山田太郎',
         phoneNumber: '090-1234-5678',
@@ -77,7 +77,7 @@ describe('CreateProvisionalBookingApplicationService', () => {
 
     const dto = await svc.execute({
       carId: 'car-0000001',
-      startAt: '2026-01-18T10:00:00.000Z',
+      startAt: '2026-01-18T10:00:00.000+09:00',
       durationMinutes: 60,
       customerName: '山田太郎',
       phoneNumber: '090-1234-5678',
@@ -85,7 +85,7 @@ describe('CreateProvisionalBookingApplicationService', () => {
 
     expect(dto.toJSON()).toEqual({
       carId: 'car-0000001',
-      startAt: '2026-01-18T10:00:00.000Z',
+      startAt: '2026-01-18T10:00:00.000+09:00',
       durationMinutes: 60,
       calendarEventId: 'event-1',
     });

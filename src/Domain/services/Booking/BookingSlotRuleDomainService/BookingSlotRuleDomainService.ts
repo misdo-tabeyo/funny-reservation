@@ -17,8 +17,8 @@ import { TimeRange } from 'Domain/models/Booking/TimeRange/TimeRange';
  * NOTE:
  * - 将来的には「料金表(メニュー表)」の各項目に所要時間を持たせ、
  *   施工内容の合計時間から timeRange.duration を算出する想定。
- * - タイムゾーンは Domain の DateTime が canonical Z(UTC) を前提にしているため、
- *   営業時間判定も UTC の時刻（10:00Z-18:00Z）として扱う。
+ * - タイムゾーンは JST(+09:00) 前提。
+ *   営業時間判定も JST の時刻（10:00-18:00）として扱う。
  */
 
 export type BookingSlotRuleContext = {
@@ -33,8 +33,8 @@ export type BookingSlotRuleResult = {
 };
 
 export class BookingSlotRuleDomainService {
-  static readonly BUSINESS_OPEN_HOUR_UTC = 10;
-  static readonly BUSINESS_CLOSE_HOUR_UTC = 18;
+  static readonly BUSINESS_OPEN_HOUR_JST = 10;
+  static readonly BUSINESS_CLOSE_HOUR_JST = 18;
   /** 5時間(=300分)を超える場合は「長時間枠」として扱う */
   static readonly LONG_DURATION_THRESHOLD_MINUTES = 5 * 60;
 
@@ -49,7 +49,7 @@ export class BookingSlotRuleDomainService {
     const businessHours = this.isWithinBusinessHours(timeRange);
     if (!businessHours.ok) return businessHours;
 
-  const isLongDuration = timeRange.duration.minutes > this.LONG_DURATION_THRESHOLD_MINUTES;
+    const isLongDuration = timeRange.duration.minutes > this.LONG_DURATION_THRESHOLD_MINUTES;
 
     // 同日の予約が 1 件以上ある場合
     if (context.existingBookingsCount >= 1) {
@@ -60,8 +60,8 @@ export class BookingSlotRuleDomainService {
       return { ok: true };
     }
 
-    // 同日の予約が 0 件の場合
-    const startHour = timeRange.startAt.toDate().getUTCHours();
+  // 同日の予約が 0 件の場合
+  const startHour = toJstParts(timeRange.startAt.toTimestamp()).hour;
 
     if (isLongDuration) {
       const allowed = startHour === 10 || startHour === 11 || startHour === 12;
@@ -78,33 +78,31 @@ export class BookingSlotRuleDomainService {
   }
 
   private static isWithinBusinessHours(timeRange: TimeRange): BookingSlotRuleResult {
-    const start = timeRange.startAt.toDate();
-    const end = timeRange.endAt.toDate();
+    const start = toJstParts(timeRange.startAt.toTimestamp());
+    const end = toJstParts(timeRange.endAt.toTimestamp());
 
     // 同日内で完結する前提（1時間単位なので自然に満たす想定だが、保険）
-    const sameUtcDate =
-      start.getUTCFullYear() === end.getUTCFullYear() &&
-      start.getUTCMonth() === end.getUTCMonth() &&
-      start.getUTCDate() === end.getUTCDate();
-    if (!sameUtcDate) {
+    const sameJstDate =
+      start.year === end.year && start.month === end.month && start.day === end.day;
+    if (!sameJstDate) {
       return { ok: false, reason: 'TimeRange は同一日内で完結している必要があります' };
     }
 
-    const startHour = start.getUTCHours();
-    const endHour = end.getUTCHours();
-    const endMinute = end.getUTCMinutes();
-    const endSecond = end.getUTCSeconds();
-    const endMs = end.getUTCMilliseconds();
+    const startHour = start.hour;
+    const endHour = end.hour;
+    const endMinute = end.minute;
+    const endSecond = end.second;
+    const endMs = end.millisecond;
 
     // start >= 10:00
-    if (startHour < this.BUSINESS_OPEN_HOUR_UTC) {
+    if (startHour < this.BUSINESS_OPEN_HOUR_JST) {
       return { ok: false, reason: '営業時間外です（開始が10:00より前）' };
     }
 
     // end <= 18:00 （ちょうど18:00はOK）
     const endIsExactlyClose =
-      endHour === this.BUSINESS_CLOSE_HOUR_UTC && endMinute === 0 && endSecond === 0 && endMs === 0;
-    const endIsBeforeClose = endHour < this.BUSINESS_CLOSE_HOUR_UTC;
+      endHour === this.BUSINESS_CLOSE_HOUR_JST && endMinute === 0 && endSecond === 0 && endMs === 0;
+    const endIsBeforeClose = endHour < this.BUSINESS_CLOSE_HOUR_JST;
 
     if (!(endIsBeforeClose || endIsExactlyClose)) {
       return { ok: false, reason: '営業時間外です（終了が18:00を超過）' };
@@ -112,4 +110,26 @@ export class BookingSlotRuleDomainService {
 
     return { ok: true };
   }
+}
+
+function toJstParts(timestampMs: number): {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+  millisecond: number;
+} {
+  // JST固定なので、ms+9時間を UTC として分解する（DST無しで安定）。
+  const d = new Date(timestampMs + 9 * 60 * 60 * 1000);
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+    hour: d.getUTCHours(),
+    minute: d.getUTCMinutes(),
+    second: d.getUTCSeconds(),
+    millisecond: d.getUTCMilliseconds(),
+  };
 }

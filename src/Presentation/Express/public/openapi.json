@@ -3,7 +3,7 @@
   "info": {
     "title": "Funny Reservation API",
     "version": "1.0.0",
-    "description": "Current API spec for Funny Reservation."
+    "description": "Current API spec for Funny Reservation. All datetimes are handled in JST (+09:00) to avoid timezone confusion."
   },
   "servers": [
     {
@@ -20,7 +20,8 @@
             "description": "OK",
             "content": {
               "text/plain": {
-                "schema": { "type": "string" }
+                "schema": { "type": "string" },
+                "example": "Hello World!"
               }
             }
           }
@@ -31,22 +32,30 @@
       "get": {
         "operationId": "checkBookingAvailability",
         "summary": "Check booking eligibility (bookable)",
-        "description": "指定枠が予約可能（bookable）かを判定します。予約可能の定義は『予約枠ルールを満たす + Googleカレンダー（正）に重複する予定がない』です。予約不可の場合は 409 を返し、reasons に理由（診断用）を入れます。時間はUTC(入力ISO/RFC3339、返却canonical UTC)。",
+        "description": "指定枠が予約可能（bookable）かを判定します。予約可能の定義は『予約枠ルールを満たす + Googleカレンダー（正）に重複する予定がない』です。予約不可の場合は 409 を返し、reasons に理由（診断用）を入れます。日時はすべて JST(+09:00) の RFC3339/ISO 8601 で扱います（+09:00 必須）。",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "name": "startAt",
             "in": "query",
             "required": true,
-            "schema": { "type": "string" },
-            "description": "Start datetime (ISO/RFC3339). Examples: 2026-01-18T00:00Z / 2026-01-18T00:00:00Z / 2026-01-18T00:00:00.000Z / 2026-01-18T09:00:00+09:00. Server normalizes to UTC canonical."
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{3})?)?\\+09:00$"
+            },
+            "description": "Start datetime in JST (+09:00 required). Example: 2026-01-18T10:00:00+09:00 or 2026-01-18T10:00:00.000+09:00"
           },
           {
             "name": "durationMinutes",
             "in": "query",
             "required": true,
-            "schema": { "type": "integer" },
-            "description": "Duration minutes (multiple of 60)"
+            "schema": {
+              "type": "integer",
+              "minimum": 60,
+              "multipleOf": 60
+            },
+            "description": "Duration minutes (>=60, multiple of 60)"
           }
         ],
         "responses": {
@@ -54,7 +63,16 @@
             "description": "Booking is bookable",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/BookingEligibilityResult" }
+                "schema": { "$ref": "#/components/schemas/BookingEligibilityResult" },
+                "example": {
+                  "bookable": true,
+                  "reasons": [],
+                  "normalized": {
+                    "startAt": "2026-01-18T10:00:00.000+09:00",
+                    "endAt": "2026-01-18T11:00:00.000+09:00",
+                    "durationMinutes": 60
+                  }
+                }
               }
             }
           },
@@ -62,7 +80,16 @@
             "description": "Booking is not bookable",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/BookingEligibilityResult" }
+                "schema": { "$ref": "#/components/schemas/BookingEligibilityResult" },
+                "example": {
+                  "bookable": false,
+                  "reasons": ["overlaps_existing_event"],
+                  "normalized": {
+                    "startAt": "2026-01-18T10:00:00.000+09:00",
+                    "endAt": "2026-01-18T11:00:00.000+09:00",
+                    "durationMinutes": 60
+                  }
+                }
               }
             }
           },
@@ -97,7 +124,7 @@
       "post": {
         "operationId": "createProvisionalBooking",
         "summary": "Create provisional booking (calendar event)",
-        "description": "仮予約を作成します（Googleカレンダーに【仮】予定を作成して枠を占有）。予約枠ルール違反または重複がある場合は 409 を返します。時間はUTC(入力ISO/RFC3339、返却canonical UTC)。",
+        "description": "仮予約を作成します（Googleカレンダーに【仮】予定を作成して枠を占有）。予約枠ルール違反または重複がある場合は 409 を返します。日時はすべて JST(+09:00) の RFC3339/ISO 8601 で扱います（+09:00 必須）。",
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
@@ -155,35 +182,53 @@
       "get": {
         "operationId": "getNearestAvailableBookingSlots",
         "summary": "Get nearest available booking slots",
-        "description": "直近の予約可能枠を返します。営業時間は10:00-18:00(開始>=10:00, 終了<=18:00)。同日の既存予約数と施工時間で開始時刻を制約: 300分超は予約0件なら10/11/12時開始のみ(予約ありは不可)。300分以下は予約0件なら10時or14時、予約ありは営業時間内なら可。時間はUTC(入力ISO/RFC3339、返却canonical UTC)。",
+        "description": "直近の予約可能枠を返します。営業時間は10:00-18:00(開始>=10:00, 終了<=18:00)。同日の既存予約数と施工時間で開始時刻を制約: 300分超は予約0件なら10/11/12時開始のみ(予約ありは不可)。300分以下は予約0件なら10時or14時、予約ありは営業時間内なら可。日時はすべて JST(+09:00) の RFC3339/ISO 8601 で扱います（+09:00 必須）。",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
             "name": "from",
             "in": "query",
             "required": false,
-            "schema": { "type": "string" },
-            "description": "Search start (ISO/RFC3339). If omitted, server uses now(). Server normalizes to UTC canonical before searching."
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{3})?)?\\+09:00$"
+            },
+            "description": "Search start in JST (+09:00 required). If omitted, server uses now() in JST."
           },
           {
             "name": "durationMinutes",
             "in": "query",
             "required": true,
-            "schema": { "type": "integer" },
+            "schema": {
+              "type": "integer",
+              "minimum": 60,
+              "multipleOf": 60
+            },
             "description": "Duration minutes (>=60, multiple of 60)"
           },
           {
             "name": "limit",
             "in": "query",
             "required": false,
-            "schema": { "type": "integer", "default": 5, "maximum": 20, "minimum": 1 },
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "maximum": 20,
+              "minimum": 1
+            },
             "description": "How many slots to return (default 5, max 20)"
           },
           {
             "name": "searchDays",
             "in": "query",
             "required": false,
-            "schema": { "type": "integer", "default": 14, "maximum": 90, "minimum": 1 },
+            "schema": {
+              "type": "integer",
+              "default": 14,
+              "maximum": 90,
+              "minimum": 1
+            },
             "description": "How many days to look ahead (default 14, max 90)"
           }
         ],
@@ -235,7 +280,7 @@
     "schemas": {
       "BookingEligibilityResult": {
         "type": "object",
-        "required": ["bookable", "reasons"],
+        "required": ["bookable", "reasons", "normalized"],
         "properties": {
           "bookable": { "type": "boolean" },
           "reasons": {
@@ -247,9 +292,23 @@
             "type": "object",
             "required": ["startAt", "endAt", "durationMinutes"],
             "properties": {
-              "startAt": { "type": "string" },
-              "endAt": { "type": "string" },
-              "durationMinutes": { "type": "integer" }
+              "startAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+09:00$",
+                "description": "Canonical JST datetime (YYYY-MM-DDTHH:mm:ss.SSS+09:00)."
+              },
+              "endAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+09:00$",
+                "description": "Canonical JST datetime (YYYY-MM-DDTHH:mm:ss.SSS+09:00)."
+              },
+              "durationMinutes": {
+                "type": "integer",
+                "minimum": 60,
+                "multipleOf": 60
+              }
             }
           }
         }
@@ -261,9 +320,15 @@
           "carId": { "type": "string" },
           "startAt": {
             "type": "string",
-            "description": "Start datetime (ISO/RFC3339). Server normalizes to UTC canonical (YYYY-MM-DDTHH:mm:ss.SSSZ)."
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{3})?)?\\+09:00$",
+            "description": "Start datetime in JST (+09:00 required). Server normalizes to canonical JST (YYYY-MM-DDTHH:mm:ss.SSS+09:00)."
           },
-          "durationMinutes": { "type": "integer" },
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 60,
+            "multipleOf": 60
+          },
           "customerName": { "type": "string" },
           "phoneNumber": { "type": "string" },
           "carModelName": { "type": "string" },
@@ -278,17 +343,16 @@
           "carId": { "type": "string" },
           "startAt": {
             "type": "string",
-            "description": "Canonical UTC datetime (YYYY-MM-DDTHH:mm:ss.SSSZ)."
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+09:00$",
+            "description": "Canonical JST datetime (YYYY-MM-DDTHH:mm:ss.SSS+09:00)."
           },
-          "durationMinutes": { "type": "integer" },
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 60,
+            "multipleOf": 60
+          },
           "calendarEventId": { "type": "string" }
-        }
-      },
-      "ErrorResponse": {
-        "type": "object",
-        "required": ["message"],
-        "properties": {
-          "message": { "type": "string" }
         }
       },
       "GetNearestAvailableBookingSlotsResult": {
@@ -297,9 +361,15 @@
         "properties": {
           "from": {
             "type": "string",
-            "description": "Effective search start in canonical UTC datetime (YYYY-MM-DDTHH:mm:ss.SSSZ)."
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+09:00$",
+            "description": "Effective search start in canonical JST datetime (YYYY-MM-DDTHH:mm:ss.SSS+09:00)."
           },
-          "durationMinutes": { "type": "integer" },
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 60,
+            "multipleOf": 60
+          },
           "slots": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/AvailableSlot" }
@@ -312,12 +382,23 @@
         "properties": {
           "startAt": {
             "type": "string",
-            "description": "Canonical UTC datetime (YYYY-MM-DDTHH:mm:ss.SSSZ)."
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+09:00$",
+            "description": "Canonical JST datetime (YYYY-MM-DDTHH:mm:ss.SSS+09:00)."
           },
           "endAt": {
             "type": "string",
-            "description": "Canonical UTC datetime (YYYY-MM-DDTHH:mm:ss.SSSZ)."
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+09:00$",
+            "description": "Canonical JST datetime (YYYY-MM-DDTHH:mm:ss.SSS+09:00)."
           }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": { "type": "string" }
         }
       }
     }

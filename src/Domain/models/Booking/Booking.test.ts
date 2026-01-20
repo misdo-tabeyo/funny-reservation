@@ -20,7 +20,7 @@ describe('Booking', () => {
   const option1 = new OptionId('optionId__01');
   const option2 = new OptionId('optionId__02');
 
-  const startAt = new DateTime('2026-01-04T00:00:00.000Z');
+  const startAt = new DateTime('2026-01-04T00:00:00.000+09:00');
   const duration = new Duration(60);
   const timeRange = new TimeRange(startAt, duration);
 
@@ -246,7 +246,7 @@ describe('Booking', () => {
       });
 
       const nextTimeRange = new TimeRange(
-        new DateTime('2026-01-04T01:00:00.000Z'),
+  new DateTime('2026-01-04T01:00:00.000+09:00'),
         new Duration(60),
       );
 
@@ -270,7 +270,7 @@ describe('Booking', () => {
       });
 
       const nextTimeRange = new TimeRange(
-        new DateTime('2026-01-04T01:00:00.000Z'),
+  new DateTime('2026-01-04T01:00:00.000+09:00'),
         new Duration(60),
       );
 

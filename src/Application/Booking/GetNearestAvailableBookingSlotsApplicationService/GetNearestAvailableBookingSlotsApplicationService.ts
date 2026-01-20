@@ -8,7 +8,7 @@ import {
 } from 'Application/Booking/IBookingCalendarEventQuery';
 
 export type GetNearestAvailableBookingSlotsQuery = {
-  /** ISO (YYYY-MM-DDTHH:mm:ss.SSSZ) */
+  /** ISO (YYYY-MM-DDTHH:mm:ss.SSS+09:00) */
   from?: string;
   durationMinutes: number;
   /** default: 5 */
@@ -38,7 +38,7 @@ const MAX_SEARCH_DAYS = 90;
  * 直近の予約可能枠を探索する
  *
  * ドメイン制約:
- * - DateTime: canonical ISO (Z + ミリ秒)
+ * - DateTime: canonical ISO (+09:00 + ミリ秒)
  * - TimeRange.startAt: ちょうど00分
  * - Duration: 60分単位
  */
@@ -78,11 +78,11 @@ export class GetNearestAvailableBookingSlotsApplicationService {
       const candidate = new TimeRange(cursor, duration);
 
       // 営業時間・開始時刻制約などのビジネスルールを適用
-      const dayKey = toUtcDayKey(candidate.startAt);
+      const dayKey = toJstDayKey(candidate.startAt);
       let existingBookingsCount = bookingCountByDay.get(dayKey);
       if (existingBookingsCount === undefined) {
-        existingBookingsCount = await this.calendarEventQuery.countActiveEventsOverlappingBusinessHoursByUtcDay({
-          utcDayKey: dayKey,
+        existingBookingsCount = await this.calendarEventQuery.countActiveEventsOverlappingBusinessHoursByJstDay({
+          jstDayKey: dayKey,
         });
         bookingCountByDay.set(dayKey, existingBookingsCount);
       }
@@ -117,12 +117,20 @@ function clampInt(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
 }
 
-function toUtcDayKey(dt: DateTime): string {
-  const d = dt.toDate();
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+function toJstDayKey(dt: DateTime): string {
+  const parts = toJstDateParts(dt.toTimestamp());
+  const m = String(parts.month).padStart(2, '0');
+  const day = String(parts.day).padStart(2, '0');
+  return `${parts.year}-${m}-${day}`;
+}
+
+function toJstDateParts(timestampMs: number): { year: number; month: number; day: number } {
+  const d = new Date(timestampMs + 9 * 60 * 60 * 1000);
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+  };
 }
 
 /**

@@ -1,4 +1,5 @@
 import { CreateProvisionalBookingCommand } from '../../Application/Booking/CreateProvisionalBookingApplicationService/CreateProvisionalBookingApplicationService';
+import { DateTime } from '../../Domain/models/shared/DateTime/DateTime';
 
 export type ValidationResult<T> =
   | { ok: true; value: T }
@@ -17,23 +18,33 @@ export type CheckAvailabilityQuery = {
 };
 
 /**
- * API入力の日時は「ISO/RFC3339っぽいが揺れる」ことが多いので、Presentation層で canonical に正規化する。
- * - 許容例: 2026-01-18T00:00Z / 2026-01-18T00:00:00Z / 2026-01-18T00:00:00.000Z / 2026-01-18T00:00:00+09:00
- * - 返す値: YYYY-MM-DDTHH:mm:ss.SSSZ（必ずZ、ミリ秒あり）
+ * API入力の日時は JST(+09:00) 前提で扱う。
+ * - 入力: +09:00 必須（Z/UTCは許容しない）
+ * - 許容例: 2026-01-18T10:00+09:00 / 2026-01-18T10:00:00+09:00 / 2026-01-18T10:00:00.000+09:00
+ * - 返す値: YYYY-MM-DDTHH:mm:ss.SSS+09:00（ミリ秒あり、+09:00固定）
  */
-function normalizeIsoToCanonicalZ(raw: string): ValidationResult<string> {
+function normalizeIsoToCanonicalJst(raw: string): ValidationResult<string> {
   const trimmed = raw.trim();
-  if (!trimmed) {
+  if (!trimmed) return { ok: false, message: 'Invalid datetime' };
+
+  // +09:00 必須（OpenAPIと一致）
+  if (!/[+]09:00$/.test(trimmed)) {
+    return { ok: false, message: 'Datetime must include +09:00 offset' };
+  }
+
+  // 秒/ミリ秒の省略を許容しつつ、canonical に正規化
+  // 1) Date.parse で絶対時刻へ
+  const ts = Date.parse(trimmed);
+  if (Number.isNaN(ts)) {
     return { ok: false, message: 'Invalid datetime' };
   }
 
-  const date = new Date(trimmed);
-  if (Number.isNaN(date.getTime())) {
+  // 2) Domainの DateTime に寄せて canonical JST(+09:00) を生成
+  try {
+    return { ok: true, value: DateTime.fromTimestamp(ts).value };
+  } catch {
     return { ok: false, message: 'Invalid datetime' };
   }
-
-  // toISOString() は常に UTC(Z) + ミリ秒付き
-  return { ok: true, value: date.toISOString() };
 }
 
 export function validateCreateProvisionalBookingCommand(
@@ -59,7 +70,7 @@ export function validateCreateProvisionalBookingCommand(
   if (!customerName) return { ok: false, message: 'customerName is required' };
   if (!phoneNumber) return { ok: false, message: 'phoneNumber is required' };
 
-  const normalizedStartAt = normalizeIsoToCanonicalZ(startAt);
+  const normalizedStartAt = normalizeIsoToCanonicalJst(startAt);
   if (!normalizedStartAt.ok) {
     return { ok: false, message: 'startAt must be a valid ISO datetime string' };
   }
@@ -113,7 +124,9 @@ export function validateNearestAvailableSlotsQuery(
         : undefined;
 
   const normalizedFrom =
-    from !== undefined ? normalizeIsoToCanonicalZ(from) : ({ ok: true, value: undefined } as const);
+    from !== undefined
+      ? normalizeIsoToCanonicalJst(from)
+      : ({ ok: true, value: undefined } as const);
   if (!normalizedFrom.ok) {
     return { ok: false, message: 'from must be a valid ISO datetime string' };
   }
@@ -169,7 +182,7 @@ export function validateCheckAvailabilityQuery(query: unknown): ValidationResult
     return { ok: false, message: 'startAt is required' };
   }
 
-  const normalizedStartAt = normalizeIsoToCanonicalZ(startAtRaw);
+  const normalizedStartAt = normalizeIsoToCanonicalJst(startAtRaw);
   if (!normalizedStartAt.ok) {
     return { ok: false, message: 'startAt must be a valid ISO datetime string' };
   }
