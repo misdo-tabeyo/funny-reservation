@@ -20,7 +20,7 @@ import {
   GetNearestAvailableBookingSlotsQuery,
 } from '../../Application/Booking/GetNearestAvailableBookingSlotsApplicationService/GetNearestAvailableBookingSlotsApplicationService';
 
-import { BookingSlotDuplicationCheckDomainService } from '../../Domain/services/Booking/BookingSlotDuplicationCheckDomainService/BookingSlotDuplicationCheckDomainService';
+import { BookingSlotAvailabilityDomainService } from '../../Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 
 import { GoogleCalendarBookingSlotAvailabilityQuery } from '../../Infrastructure/Booking/GoogleCalendarBookingSlotAvailabilityQuery';
 import { GoogleCalendarBookingCalendarEventRepository } from '../../Infrastructure/Booking/GoogleCalendarBookingCalendarEventRepository';
@@ -121,9 +121,9 @@ function buildGoogleCalendarAvailabilityQuery(): GoogleCalendarBookingSlotAvaila
   return new GoogleCalendarBookingSlotAvailabilityQuery(client, env.calendarId);
 }
 
-function buildDuplicationCheckDomainService(): BookingSlotDuplicationCheckDomainService {
+function buildBookingSlotAvailabilityDomainService(): BookingSlotAvailabilityDomainService {
   const availabilityQuery = buildGoogleCalendarAvailabilityQuery();
-  return new BookingSlotDuplicationCheckDomainService(availabilityQuery);
+  return new BookingSlotAvailabilityDomainService(availabilityQuery);
 }
 
 function buildGoogleCalendarBookingCalendarEventRepository(): GoogleCalendarBookingCalendarEventRepository {
@@ -156,11 +156,11 @@ app.get('/booking/availability', requireAuth, async (req: Request, res: Response
     };
 
     const calendarEventQuery = buildGoogleCalendarBookingCalendarEventQuery();
-    const duplicationCheckDomainService = buildDuplicationCheckDomainService();
+  const availabilityDomainService = buildBookingSlotAvailabilityDomainService();
 
     const applicationService = new CheckBookingAvailabilityApplicationService(
       calendarEventQuery,
-      duplicationCheckDomainService,
+      availabilityDomainService,
     );
 
     const result = await applicationService.execute(query);
@@ -219,16 +219,16 @@ app.post('/booking/draft', requireAuth, async (req: Request, res: Response) => {
     const requestBody: CreateProvisionalBookingCommand = validated.value;
 
     const calendarEventQuery = buildGoogleCalendarBookingCalendarEventQuery();
-    const duplicationCheckDomainService = buildDuplicationCheckDomainService();
+  const availabilityDomainService = buildBookingSlotAvailabilityDomainService();
     const bookingCalendarEventRepository = buildGoogleCalendarBookingCalendarEventRepository();
 
     const eligibilityService = new CheckBookingEligibilityApplicationService(
       calendarEventQuery,
-      duplicationCheckDomainService,
+      availabilityDomainService,
     );
 
     const applicationService = new CreateProvisionalBookingApplicationService(
-      duplicationCheckDomainService,
+      availabilityDomainService,
       bookingCalendarEventRepository,
       eligibilityService,
     );

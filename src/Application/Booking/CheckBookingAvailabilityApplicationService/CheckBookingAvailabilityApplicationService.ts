@@ -1,4 +1,4 @@
-import { BookingSlotDuplicationCheckDomainService } from 'Domain/services/Booking/BookingSlotDuplicationCheckDomainService/BookingSlotDuplicationCheckDomainService';
+import { BookingSlotAvailabilityDomainService } from 'Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 import { IBookingCalendarEventQuery } from 'Application/Booking/IBookingCalendarEventQuery';
 import {
   BookingEligibilityResult,
@@ -21,11 +21,11 @@ export class CheckBookingAvailabilityApplicationService {
 
   constructor(
     calendarEventQuery: IBookingCalendarEventQuery,
-    duplicationCheckDomainService: BookingSlotDuplicationCheckDomainService,
+    availabilityDomainService: BookingSlotAvailabilityDomainService,
   ) {
     this.eligibilityService = new CheckBookingEligibilityApplicationService(
       calendarEventQuery,
-      duplicationCheckDomainService,
+      availabilityDomainService,
     );
   }
 

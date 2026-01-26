@@ -1,7 +1,7 @@
 import { TimeRange } from 'Domain/models/Booking/TimeRange/TimeRange';
 import {
   IBookingSlotAvailabilityQuery,
-} from 'Domain/services/Booking/BookingSlotDuplicationCheckDomainService/BookingSlotDuplicationCheckDomainService';
+} from 'Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 import { IGoogleCalendarClient, CalendarEvent } from 'Infrastructure/GoogleCalendar/IGoogleCalendarClient';
 import { DateTime } from 'Domain/models/shared/DateTime/DateTime';
 
@@ -11,12 +11,14 @@ export class GoogleCalendarBookingSlotAvailabilityQuery implements IBookingSlotA
     private readonly calendarId: string,
   ) {}
 
-  async existsOverlappingSlot(params: { timeRange: TimeRange }): Promise<boolean> {
+  async existsUnavailableSlot(params: { timeRange: TimeRange; bufferMinutes: number }): Promise<boolean> {
     const { timeRange } = params;
+    const bufferMinutes = params.bufferMinutes;
 
-    // listEvents は「開始が timeMin〜timeMax のイベント」中心なので、検索窓を少し広げる
+  // listEvents は「開始が timeMin〜timeMax のイベント」中心なので、検索窓を少し広げる
     const windowStart = this.minusHours(timeRange.startAt, 24).value;
-    const windowEnd = timeRange.endAt.value;
+  // バッファを含めて判定するため end 側も広げる
+  const windowEnd = timeRange.endAt.addMinutes(bufferMinutes).value;
 
     const events = await this.client.listEvents({
       calendarId: this.calendarId,
@@ -27,15 +29,15 @@ export class GoogleCalendarBookingSlotAvailabilityQuery implements IBookingSlotA
     // cancelled は無視
     const activeEvents = events.filter((e) => e.status !== 'cancelled');
 
-    return activeEvents.some((event) => this.overlapsEvent(timeRange, event));
+    return activeEvents.some((event) => this.overlapsEventWithBuffer(timeRange, event, bufferMinutes));
   }
 
-  private overlapsEvent(slot: TimeRange, event: CalendarEvent): boolean {
+  private overlapsEventWithBuffer(slot: TimeRange, event: CalendarEvent, bufferMinutes: number): boolean {
     const evRange = this.toEventTimestampRange(event);
     if (!evRange) return false;
 
-    const slotStart = slot.startAt.toTimestamp();
-    const slotEnd = slot.endAt.toTimestamp();
+    const slotStart = slot.startAt.addMinutes(-bufferMinutes).toTimestamp();
+    const slotEnd = slot.endAt.addMinutes(bufferMinutes).toTimestamp();
 
     // [start, end) の重なり
     return evRange.start < slotEnd && slotStart < evRange.end;

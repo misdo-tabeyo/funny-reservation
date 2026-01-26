@@ -32,7 +32,7 @@
       "get": {
         "operationId": "checkBookingAvailability",
         "summary": "Check booking eligibility (bookable)",
-        "description": "指定枠が予約可能（bookable）かを判定します。予約可能の定義は『予約枠ルールを満たす + Googleカレンダー（正）に重複する予定がない』です。予約不可の場合は 409 を返し、reasons に理由（診断用）を入れます。日時はすべて JST(+09:00) の RFC3339/ISO 8601 で扱います（+09:00 必須）。",
+        "description": "指定枠が予約可能（bookable）かを判定します。予約可能の定義は『予約枠ルール（営業時間/開始時刻制約/長時間枠など）を満たす + Googleカレンダー（正）の既存予定（仮予定含む）と重複しない + 予約間バッファ60分（前後）を確保できる』です。予約不可の場合は 409 を返し、reasons に理由（診断用）を入れます。日時はすべて JST(+09:00) の RFC3339/ISO 8601 で扱います（+09:00 必須）。",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
@@ -83,7 +83,7 @@
                 "schema": { "$ref": "#/components/schemas/BookingEligibilityResult" },
                 "example": {
                   "bookable": false,
-                  "reasons": ["overlaps_existing_event"],
+                  "reasons": ["指定の枠は既に埋まっているか、予約間バッファを確保できません"],
                   "normalized": {
                     "startAt": "2026-01-18T10:00:00.000+09:00",
                     "endAt": "2026-01-18T11:00:00.000+09:00",
@@ -124,7 +124,7 @@
       "post": {
         "operationId": "createProvisionalBooking",
         "summary": "Create provisional booking (calendar event)",
-        "description": "仮予約を作成します（Googleカレンダーに【仮】予定を作成して枠を占有）。予約枠ルール違反または重複がある場合は 409 を返します。日時はすべて JST(+09:00) の RFC3339/ISO 8601 で扱います（+09:00 必須）。",
+        "description": "仮予約を作成します（Googleカレンダーに【仮】予定を作成して枠を占有）。予約枠ルール違反、既存予定（仮予定含む）との重複、または予約間バッファ60分（前後）を確保できない場合は 409 を返します。日時はすべて JST(+09:00) の RFC3339/ISO 8601 で扱います（+09:00 必須）。",
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
@@ -182,7 +182,7 @@
       "get": {
         "operationId": "getNearestAvailableBookingSlots",
         "summary": "Get nearest available booking slots",
-        "description": "直近の予約可能枠を返します。営業時間は10:00-18:00(開始>=10:00, 終了<=18:00)。同日の既存予約数と施工時間で開始時刻を制約: 300分超は予約0件なら10/11/12時開始のみ(予約ありは不可)。300分以下は予約0件なら10時or14時、予約ありは営業時間内なら可。日時はすべて JST(+09:00) の RFC3339/ISO 8601 で扱います（+09:00 必須）。",
+        "description": "直近の予約可能枠を返します。営業時間は10:00-18:00(開始>=10:00, 終了<=18:00)。同日の既存予約数と施工時間で開始時刻を制約: 300分超は予約0件なら10/11/12時開始のみ(予約ありは不可)。300分以下は予約0件なら10時or14時、予約ありは営業時間内なら可。さらに、既存予定（仮予定含む）との間に予約間バッファ60分（前後）を確保できる枠のみを返します。日時はすべて JST(+09:00) の RFC3339/ISO 8601 で扱います（+09:00 必須）。",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           {

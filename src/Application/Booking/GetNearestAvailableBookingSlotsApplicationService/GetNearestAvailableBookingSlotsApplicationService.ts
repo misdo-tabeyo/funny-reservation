@@ -95,7 +95,7 @@ export class GetNearestAvailableBookingSlotsApplicationService {
         continue;
       }
 
-      const overlaps = hasOverlap(candidate, eventRanges);
+      const overlaps = hasOverlapWithBuffer(candidate, eventRanges, 60);
       if (!overlaps) {
         slots.push({ startAt: candidate.startAt.value, endAt: candidate.endAt.value });
       }
@@ -148,9 +148,13 @@ function ceilToNextHour(dt: DateTime): DateTime {
   return DateTime.fromDate(new Date(ceiled));
 }
 
-function hasOverlap(slot: TimeRange, eventRanges: BookingCalendarEventTimeRange[]): boolean {
-  const slotStart = slot.startAt.toTimestamp();
-  const slotEnd = slot.endAt.toTimestamp();
+function hasOverlapWithBuffer(
+  slot: TimeRange,
+  eventRanges: BookingCalendarEventTimeRange[],
+  bufferMinutes: number,
+): boolean {
+  const slotStart = slot.startAt.addMinutes(-bufferMinutes).toTimestamp();
+  const slotEnd = slot.endAt.addMinutes(bufferMinutes).toTimestamp();
 
   // eventRanges は start昇順が望ましいが、保証しなくてもOK
   return eventRanges.some((r) => r.start < slotEnd && slotStart < r.end);

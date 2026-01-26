@@ -1,4 +1,4 @@
-import { BookingSlotDuplicationCheckDomainService } from 'Domain/services/Booking/BookingSlotDuplicationCheckDomainService/BookingSlotDuplicationCheckDomainService';
+import { BookingSlotAvailabilityDomainService } from 'Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 import { CarId } from 'Domain/models/Booking/CarId/CarId';
 import { DateTime } from 'Domain/models/shared/DateTime/DateTime';
 import { Duration } from 'Domain/models/Booking/TimeRange/Duration/Duration';
@@ -26,7 +26,7 @@ export type CreateProvisionalBookingCommand = {
 
 export class CreateProvisionalBookingApplicationService {
   constructor(
-    private readonly duplicationCheckDomainService: BookingSlotDuplicationCheckDomainService,
+    private readonly availabilityDomainService: BookingSlotAvailabilityDomainService,
     private readonly bookingCalendarEventRepository: IBookingCalendarEventRepository,
     private readonly eligibilityService?: CheckBookingEligibilityApplicationService,
   ) {}
@@ -50,10 +50,11 @@ export class CreateProvisionalBookingApplicationService {
       }
     }
 
-    // 重複チェック（Googleカレンダーが正）
-    const duplicated = await this.duplicationCheckDomainService.execute({ timeRange });
-    if (duplicated) {
-      throw new Error('指定の枠は既に埋まっています');
+    // 可用性チェック（Googleカレンダーが正）
+    // - 重複 + 予約間バッファ(既定60分) をここでも保証する
+    const unavailable = await this.availabilityDomainService.execute({ timeRange });
+    if (unavailable) {
+      throw new Error('指定の枠は既に埋まっているか、予約間バッファを確保できません');
     }
 
     const title = this.buildTitle(command);

@@ -45,12 +45,12 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
     expect(result.from).toBe('2026-01-18T11:00:00.000+09:00');
     expect(result.slots).toEqual([
       {
-        startAt: '2026-01-18T12:00:00.000+09:00',
-        endAt: '2026-01-18T13:00:00.000+09:00',
-      },
-      {
         startAt: '2026-01-18T13:00:00.000+09:00',
         endAt: '2026-01-18T14:00:00.000+09:00',
+      },
+      {
+        startAt: '2026-01-18T14:00:00.000+09:00',
+        endAt: '2026-01-18T15:00:00.000+09:00',
       },
     ]);
   });
@@ -167,7 +167,8 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
     );
 
     // relaxed(<=5h) かつ 既存予約あり の場合、開始時刻制約(10/14)は外れ「営業時間内ならOK」。
-    // ただし 10:00-11:00 は重複するので、その次の 11:00 が返るはず。
+  // ただし 10:00-11:00 は重複し、さらに予約間バッファにより 11:00-12:00 も不可。
+  // その次の 12:00 が返るはず。
     const result = await svc.execute({
       from: '2026-01-18T10:00:00.000+09:00',
       durationMinutes: 60,
@@ -177,8 +178,8 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
 
     expect(result.slots).toEqual([
       {
-        startAt: '2026-01-18T11:00:00.000+09:00',
-        endAt: '2026-01-18T12:00:00.000+09:00',
+        startAt: '2026-01-18T12:00:00.000+09:00',
+        endAt: '2026-01-18T13:00:00.000+09:00',
       },
     ]);
   });

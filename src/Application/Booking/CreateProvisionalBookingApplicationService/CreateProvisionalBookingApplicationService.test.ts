@@ -1,8 +1,8 @@
 import { CreateProvisionalBookingApplicationService } from 'Application/Booking/CreateProvisionalBookingApplicationService/CreateProvisionalBookingApplicationService';
-import { BookingSlotDuplicationCheckDomainService } from 'Domain/services/Booking/BookingSlotDuplicationCheckDomainService/BookingSlotDuplicationCheckDomainService';
+import { BookingSlotAvailabilityDomainService } from 'Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 import { CheckBookingEligibilityApplicationService } from 'Application/Booking/CheckBookingEligibilityApplicationService/CheckBookingEligibilityApplicationService';
 import { IBookingCalendarEventRepository } from 'Application/Booking/IBookingCalendarEventRepository';
-import { IBookingSlotAvailabilityQuery } from 'Domain/services/Booking/BookingSlotDuplicationCheckDomainService/BookingSlotDuplicationCheckDomainService';
+import { IBookingSlotAvailabilityQuery } from 'Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 import { IBookingCalendarEventQuery } from 'Application/Booking/IBookingCalendarEventQuery';
 
 class FakeCalendarEventRepository implements IBookingCalendarEventRepository {
@@ -16,7 +16,8 @@ class FakeAvailabilityQuery implements IBookingSlotAvailabilityQuery {
   constructor(private readonly duplicated: boolean) {}
 
   // eslint-disable-next-line @typescript-eslint/require-await
-  async existsOverlappingSlot(): Promise<boolean> {
+  async existsUnavailableSlot(params: { bufferMinutes: number }): Promise<boolean> {
+    void params;
     return this.duplicated;
   }
 }
@@ -37,15 +38,15 @@ class FakeCalendarEventQuery implements IBookingCalendarEventQuery {
 
 describe('CreateProvisionalBookingApplicationService', () => {
   it('eligibilityがNGならエラー', async () => {
-    const duplicationCheck = new BookingSlotDuplicationCheckDomainService(new FakeAvailabilityQuery(false));
+    const availabilityDomainService = new BookingSlotAvailabilityDomainService(new FakeAvailabilityQuery(false));
     const eligibility = new CheckBookingEligibilityApplicationService(
       new FakeCalendarEventQuery(0),
       // duplicationCheckと同じものを渡す（重複はfalseなのでルールNGだけを作る）
-      duplicationCheck,
+      availabilityDomainService,
     );
 
     const svc = new CreateProvisionalBookingApplicationService(
-      duplicationCheck,
+      availabilityDomainService,
       new FakeCalendarEventRepository(),
       eligibility,
     );
@@ -63,14 +64,14 @@ describe('CreateProvisionalBookingApplicationService', () => {
   });
 
   it('eligibilityがOKなら仮予約を作成できる', async () => {
-    const duplicationCheck = new BookingSlotDuplicationCheckDomainService(new FakeAvailabilityQuery(false));
+    const availabilityDomainService = new BookingSlotAvailabilityDomainService(new FakeAvailabilityQuery(false));
     const eligibility = new CheckBookingEligibilityApplicationService(
       new FakeCalendarEventQuery(0),
-      duplicationCheck,
+      availabilityDomainService,
     );
 
     const svc = new CreateProvisionalBookingApplicationService(
-      duplicationCheck,
+      availabilityDomainService,
       new FakeCalendarEventRepository(),
       eligibility,
     );

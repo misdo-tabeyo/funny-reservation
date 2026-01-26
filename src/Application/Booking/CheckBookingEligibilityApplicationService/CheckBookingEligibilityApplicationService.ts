@@ -1,7 +1,7 @@
 import { Duration } from 'Domain/models/Booking/TimeRange/Duration/Duration';
 import { TimeRange } from 'Domain/models/Booking/TimeRange/TimeRange';
 import { DateTime } from 'Domain/models/shared/DateTime/DateTime';
-import { BookingSlotDuplicationCheckDomainService } from 'Domain/services/Booking/BookingSlotDuplicationCheckDomainService/BookingSlotDuplicationCheckDomainService';
+import { BookingSlotAvailabilityDomainService } from 'Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 import { BookingSlotRuleDomainService } from 'Domain/services/Booking/BookingSlotRuleDomainService/BookingSlotRuleDomainService';
 import { IBookingCalendarEventQuery } from 'Application/Booking/IBookingCalendarEventQuery';
 
@@ -32,7 +32,7 @@ export type BookingEligibilityResult = {
 export class CheckBookingEligibilityApplicationService {
   constructor(
     private readonly calendarEventQuery: IBookingCalendarEventQuery,
-    private readonly duplicationCheckDomainService: BookingSlotDuplicationCheckDomainService,
+    private readonly availabilityDomainService: BookingSlotAvailabilityDomainService,
   ) {}
 
   async execute(query: CheckBookingEligibilityQuery): Promise<BookingEligibilityResult> {
@@ -59,11 +59,15 @@ export class CheckBookingEligibilityApplicationService {
       };
     }
 
-    const duplicated = await this.duplicationCheckDomainService.execute({ timeRange });
-    if (duplicated) {
+    const unavailable = await this.availabilityDomainService.execute({
+      timeRange,
+      // 予約間バッファ（仮予定含む）
+      context: { bufferMinutes: BookingSlotAvailabilityDomainService.DEFAULT_BUFFER_MINUTES },
+    });
+    if (unavailable) {
       return {
         bookable: false,
-        reasons: ['指定の枠は既に埋まっています'],
+        reasons: ['指定の枠は既に埋まっているか、予約間バッファを確保できません'],
         normalized: {
           startAt: timeRange.startAt.value,
           endAt: timeRange.endAt.value,

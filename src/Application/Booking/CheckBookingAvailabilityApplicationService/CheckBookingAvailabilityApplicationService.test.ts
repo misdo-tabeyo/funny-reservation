@@ -1,6 +1,6 @@
 import { CheckBookingAvailabilityApplicationService } from 'Application/Booking/CheckBookingAvailabilityApplicationService/CheckBookingAvailabilityApplicationService';
 import { IBookingCalendarEventQuery } from 'Application/Booking/IBookingCalendarEventQuery';
-import { BookingSlotDuplicationCheckDomainService } from 'Domain/services/Booking/BookingSlotDuplicationCheckDomainService/BookingSlotDuplicationCheckDomainService';
+import { BookingSlotAvailabilityDomainService } from 'Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 
 class FakeCalendarEventQuery implements IBookingCalendarEventQuery {
   async listActiveEventTimeRanges(): Promise<Array<{ start: number; end: number }>> {
@@ -14,18 +14,14 @@ class FakeCalendarEventQuery implements IBookingCalendarEventQuery {
   }
 }
 
-class FakeDuplicationCheckDomainService extends BookingSlotDuplicationCheckDomainService {
-  constructor(private readonly duplicated: boolean) {
-    // 親コンストラクタの依存は使わない（executeだけを使う）
-    super({
-      // eslint-disable-next-line @typescript-eslint/require-await
-      existsOverlappingSlot: async () => false,
-    });
+class FakeAvailabilityDomainService extends BookingSlotAvailabilityDomainService {
+  constructor(private readonly unavailable: boolean) {
+    super();
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
   override async execute(): Promise<boolean> {
-    return this.duplicated;
+    return this.unavailable;
   }
 }
 
@@ -33,7 +29,7 @@ describe('CheckBookingAvailabilityApplicationService', () => {
   it('予約可能なら bookable=true', async () => {
     const svc = new CheckBookingAvailabilityApplicationService(
       new FakeCalendarEventQuery(0),
-      new FakeDuplicationCheckDomainService(false),
+      new FakeAvailabilityDomainService(false),
     );
 
     const result = await svc.execute({
@@ -48,7 +44,7 @@ describe('CheckBookingAvailabilityApplicationService', () => {
   it('重複があれば bookable=false', async () => {
     const svc = new CheckBookingAvailabilityApplicationService(
       new FakeCalendarEventQuery(0),
-      new FakeDuplicationCheckDomainService(true),
+      new FakeAvailabilityDomainService(true),
     );
 
     const result = await svc.execute({
@@ -57,6 +53,6 @@ describe('CheckBookingAvailabilityApplicationService', () => {
     });
 
     expect(result.bookable).toBe(false);
-    expect(result.reasons).toEqual(['指定の枠は既に埋まっています']);
+    expect(result.reasons).toEqual(['指定の枠は既に埋まっているか、予約間バッファを確保できません']);
   });
 });

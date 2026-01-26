@@ -3,7 +3,7 @@ import { Duration } from '../../../Domain/models/Booking/TimeRange/Duration/Dura
 import { DateTime } from '../../../Domain/models/shared/DateTime/DateTime';
 import {
   IBookingSlotAvailabilityQuery,
-} from '../../../Domain/services/Booking/BookingSlotDuplicationCheckDomainService/BookingSlotDuplicationCheckDomainService';
+} from '../../../Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 
 export type CheckBookingSlotAvailabilityQuery = {
   startAt: string; // ISO文字列想定
@@ -28,7 +28,7 @@ export class CheckBookingSlotAvailabilityApplicationService {
       new Duration(query.durationMinutes),
     );
 
-    const exists = await this.availabilityQuery.existsOverlappingSlot({ timeRange });
+    const exists = await this.availabilityQuery.existsUnavailableSlot({ timeRange, bufferMinutes: 60 });
 
     return { available: !exists };
   }

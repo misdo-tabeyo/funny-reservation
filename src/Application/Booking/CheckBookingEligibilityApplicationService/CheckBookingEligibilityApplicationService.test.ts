@@ -1,5 +1,5 @@
 import { CheckBookingEligibilityApplicationService } from './CheckBookingEligibilityApplicationService';
-import { BookingSlotDuplicationCheckDomainService } from 'Domain/services/Booking/BookingSlotDuplicationCheckDomainService/BookingSlotDuplicationCheckDomainService';
+import { BookingSlotAvailabilityDomainService } from 'Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 import { IBookingCalendarEventQuery, BookingCalendarEventTimeRange } from 'Application/Booking/IBookingCalendarEventQuery';
 import { DateTime } from 'Domain/models/shared/DateTime/DateTime';
 
@@ -20,7 +20,7 @@ class FakeCalendarEventQuery implements IBookingCalendarEventQuery {
   }
 }
 
-class FakeDuplicationCheckDomainService extends BookingSlotDuplicationCheckDomainService {
+class FakeAvailabilityDomainService extends BookingSlotAvailabilityDomainService {
   constructor(private readonly duplicated: boolean) {
     super();
   }
@@ -34,7 +34,7 @@ describe('CheckBookingEligibilityApplicationService', () => {
   it('ビジネスルールにより予約不可（営業時間外）', async () => {
     const svc = new CheckBookingEligibilityApplicationService(
       new FakeCalendarEventQuery(0),
-      new FakeDuplicationCheckDomainService(false),
+      new FakeAvailabilityDomainService(false),
     );
 
     const result = await svc.execute({
@@ -49,7 +49,7 @@ describe('CheckBookingEligibilityApplicationService', () => {
   it('重複により予約不可', async () => {
     const svc = new CheckBookingEligibilityApplicationService(
       new FakeCalendarEventQuery(1),
-      new FakeDuplicationCheckDomainService(true),
+      new FakeAvailabilityDomainService(true),
     );
 
     const result = await svc.execute({
@@ -58,13 +58,13 @@ describe('CheckBookingEligibilityApplicationService', () => {
     });
 
     expect(result.bookable).toBe(false);
-    expect(result.reasons).toEqual(['指定の枠は既に埋まっています']);
+    expect(result.reasons).toEqual(['指定の枠は既に埋まっているか、予約間バッファを確保できません']);
   });
 
   it('ルールOKかつ重複なしなら予約可能', async () => {
     const svc = new CheckBookingEligibilityApplicationService(
       new FakeCalendarEventQuery(1),
-      new FakeDuplicationCheckDomainService(false),
+      new FakeAvailabilityDomainService(false),
     );
 
     const result = await svc.execute({
