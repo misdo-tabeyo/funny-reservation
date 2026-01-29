@@ -47,7 +47,8 @@ import {
 } from './requestValidation';
 
 const app = express();
-const port = 8080;
+const port = Number(process.env.PORT) || 8080;
+const host = '0.0.0.0';
 
 // JSON形式のリクエストボディを正しく解析するために必要
 app.use(express.json());
@@ -373,7 +374,7 @@ app.post('/booking/draft', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-app.listen(port, () => {
+app.listen(port, host, () => {
   // eslint-disable-next-line no-console
-  console.log(`Example app listening on port ${port}`);
+  console.log(`Server listening on port ${port}`);
 });

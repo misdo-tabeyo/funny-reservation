@@ -5,14 +5,23 @@ import { ValueObject } from 'Domain/models/shared/ValueObject';
  * 料金表の列に対応する固定値
  */
 export class FilmMenuId extends ValueObject<string, 'FilmMenuId'> {
-  // 定数として定義（料金表の列に対応）
-  static readonly FRONT_SET = new FilmMenuId('front-set');
-  static readonly FRONT = new FilmMenuId('front');
-  static readonly FRONT_LEFT_RIGHT = new FilmMenuId('front-left-right');
-  static readonly REAR_SET = new FilmMenuId('rear-set');
-  static readonly REAR_LEFT_RIGHT = new FilmMenuId('rear-left-right');
-  static readonly QUARTER_LEFT_RIGHT = new FilmMenuId('quarter-left-right');
-  static readonly REAR = new FilmMenuId('rear');
+  private static readonly VALID_IDS = [
+    'front-set',
+    'front',
+    'front-left-right',
+    'rear-set',
+    'rear-left-right',
+    'quarter-left-right',
+    'rear',
+  ] as const;
+
+  static readonly FRONT_SET = FilmMenuId.from('front-set');
+  static readonly FRONT = FilmMenuId.from('front');
+  static readonly FRONT_LEFT_RIGHT = FilmMenuId.from('front-left-right');
+  static readonly REAR_SET = FilmMenuId.from('rear-set');
+  static readonly REAR_LEFT_RIGHT = FilmMenuId.from('rear-left-right');
+  static readonly QUARTER_LEFT_RIGHT = FilmMenuId.from('quarter-left-right');
+  static readonly REAR = FilmMenuId.from('rear');
 
   static readonly ALL_MENUS = [
     FilmMenuId.FRONT_SET,
@@ -24,13 +33,16 @@ export class FilmMenuId extends ValueObject<string, 'FilmMenuId'> {
     FilmMenuId.REAR,
   ] as const;
 
+  static from(value: string): FilmMenuId {
+    return new FilmMenuId(value);
+  }
+
   constructor(value: string) {
     super(value);
   }
 
   protected validate(value: string): void {
-    const validIds = FilmMenuId.ALL_MENUS.map((m) => m.value);
-    if (!validIds.includes(value)) {
+    if (!(FilmMenuId.VALID_IDS as readonly string[]).includes(value)) {
       throw new Error(`不正なFilmMenuId: ${value}`);
     }
   }
