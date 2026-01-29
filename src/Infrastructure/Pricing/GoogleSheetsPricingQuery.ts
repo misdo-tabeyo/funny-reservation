@@ -127,7 +127,9 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
 
       if (!carName) continue; // 車種名がない行はスキップ
 
-      const carId = CarId.fromNames(currentManufacturer, carName);
+  // 列構成を変えられない前提のため、B列（車名）をそのまま CarId として扱う。
+  // 日本語・記号込みでも ValueObject 側で許容し、未知の車名でも落ちないようにする。
+  const carId = new CarId(carName);
 
       cars.push({
         id: carId.value,
@@ -202,7 +204,7 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
 
       if (!carName) continue;
 
-      const carId = CarId.fromNames(currentManufacturer, carName);
+  const carId = new CarId(carName);
 
       // メニュー別料金を抽出
       const prices: CarMenuPrice[] = [];

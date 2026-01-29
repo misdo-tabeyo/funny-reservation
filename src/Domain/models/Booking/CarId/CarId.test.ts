@@ -5,6 +5,7 @@ describe('CarId', () => {
   test('有効なフォーマットの場合 canonical が生成される', () => {
     expect(new CarId('toyota-prius').value).toBe('toyota-prius');
     expect(new CarId('lexus-nx').value).toBe('lexus-nx');
+    expect(new CarId('ヴィッツ(リア3角窓あり)').value).toBe('ヴィッツ(リア3角窓あり)');
   });
 
   test('equals', () => {
@@ -15,10 +16,11 @@ describe('CarId', () => {
     expect(a.equals(c)).toBeFalsy();
   });
 
-  test('fromNames() - 日本語メーカー名・車種名から生成', () => {
-    expect(CarId.fromNames('トヨタ', 'プリウス').value).toBe('toyota-prius');
-    expect(CarId.fromNames('レクサス', 'NX').value).toBe('lexus-nx');
-    expect(CarId.fromNames('ホンダ', 'N-BOX').value).toBe('honda-n-box');
+  test('日本語や記号を含む ID も扱える', () => {
+    expect(new CarId('プリウス').value).toBe('プリウス');
+    expect(new CarId('タウンエース(リア・スライドガラスあり)').value).toBe(
+      'タウンエース(リア・スライドガラスあり)',
+    );
   });
 
   // 異常系
@@ -27,9 +29,8 @@ describe('CarId', () => {
     expect(() => new CarId('a'.repeat(101))).toThrow('CarIdの文字数が不正です');
   });
 
-  test('不正なフォーマットの場合にエラーを投げる', () => {
-    expect(() => new CarId('TOYOTA-PRIUS')).toThrow('不正なCarIdの形式です');
-    expect(() => new CarId('toyota_prius')).toThrow('不正なCarIdの形式です');
-    expect(() => new CarId('toyota prius')).toThrow('不正なCarIdの形式です');
+  test('制御文字を含む場合にエラーを投げる', () => {
+    expect(() => new CarId('prius\n')).toThrow('不正なCarIdの形式です');
+    expect(() => new CarId('prius\u0000')).toThrow('不正なCarIdの形式です');
   });
 });
