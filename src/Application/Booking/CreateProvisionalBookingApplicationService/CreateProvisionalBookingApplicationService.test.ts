@@ -4,6 +4,7 @@ import { CheckBookingEligibilityApplicationService } from 'Application/Booking/C
 import { IBookingCalendarEventRepository } from 'Application/Booking/IBookingCalendarEventRepository';
 import { IBookingSlotAvailabilityQuery } from 'Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 import { IBookingCalendarEventQuery } from 'Application/Booking/IBookingCalendarEventQuery';
+import { IPricingQuery, CarPricing } from 'Application/Pricing/IPricingQuery';
 
 class FakeCalendarEventRepository implements IBookingCalendarEventRepository {
   // eslint-disable-next-line @typescript-eslint/require-await
@@ -36,6 +37,42 @@ class FakeCalendarEventQuery implements IBookingCalendarEventQuery {
   }
 }
 
+class FakePricingQuery implements IPricingQuery {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async listManufacturers(): Promise<never[]> {
+    return [];
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async listCarsByManufacturer(): Promise<never[]> {
+    return [];
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async findCarPricing(): Promise<CarPricing> {
+    return {
+      carId: 'toyota-prius',
+      carName: 'プリウス',
+      carNameReading: 'ぷりうす',
+      manufacturer: 'トヨタ',
+      prices: [
+        { menuId: 'front-set', menuName: 'フロントセット', amount: 50000 },
+        { menuId: 'rear-set', menuName: 'リアセット', amount: 60000 },
+      ],
+    };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async findPrice(): Promise<null> {
+    return null;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async listAllCarPricings(): Promise<never[]> {
+    return [];
+  }
+}
+
 describe('CreateProvisionalBookingApplicationService', () => {
   it('eligibilityがNGならエラー', async () => {
     const availabilityDomainService = new BookingSlotAvailabilityDomainService(new FakeAvailabilityQuery(false));
@@ -48,13 +85,15 @@ describe('CreateProvisionalBookingApplicationService', () => {
     const svc = new CreateProvisionalBookingApplicationService(
       availabilityDomainService,
       new FakeCalendarEventRepository(),
+      new FakePricingQuery(),
       eligibility,
     );
 
     // 営業時間外
     await expect(
       svc.execute({
-        carId: 'car-0000001',
+        carId: 'toyota-prius',
+        menuId: 'front-set',
         startAt: '2026-01-18T09:00:00.000+09:00',
         durationMinutes: 60,
         customerName: '山田太郎',
@@ -73,11 +112,13 @@ describe('CreateProvisionalBookingApplicationService', () => {
     const svc = new CreateProvisionalBookingApplicationService(
       availabilityDomainService,
       new FakeCalendarEventRepository(),
+      new FakePricingQuery(),
       eligibility,
     );
 
     const dto = await svc.execute({
-      carId: 'car-0000001',
+      carId: 'toyota-prius',
+      menuId: 'front-set',
       startAt: '2026-01-18T10:00:00.000+09:00',
       durationMinutes: 60,
       customerName: '山田太郎',
@@ -85,7 +126,7 @@ describe('CreateProvisionalBookingApplicationService', () => {
     });
 
     expect(dto.toJSON()).toEqual({
-      carId: 'car-0000001',
+      carId: 'toyota-prius',
       startAt: '2026-01-18T10:00:00.000+09:00',
       durationMinutes: 60,
       calendarEventId: 'event-1',

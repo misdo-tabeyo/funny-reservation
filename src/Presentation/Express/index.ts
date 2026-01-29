@@ -351,9 +351,11 @@ app.post('/booking/draft', requireAuth, async (req: Request, res: Response) => {
       availabilityDomainService,
     );
 
+    const pricingQuery = buildPricingQuery();
     const applicationService = new CreateProvisionalBookingApplicationService(
       availabilityDomainService,
       bookingCalendarEventRepository,
+      pricingQuery,
       eligibilityService,
     );
 

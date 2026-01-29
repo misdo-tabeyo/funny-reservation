@@ -1,5 +1,6 @@
 import { BookingSlotAvailabilityDomainService } from 'Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 import { CarId } from 'Domain/models/Booking/CarId/CarId';
+import { MenuId } from 'Domain/models/Booking/MenuId/MenuId';
 import { DateTime } from 'Domain/models/shared/DateTime/DateTime';
 import { Duration } from 'Domain/models/Booking/TimeRange/Duration/Duration';
 import { TimeRange } from 'Domain/models/Booking/TimeRange/TimeRange';
@@ -8,34 +9,47 @@ import { ProvisionalBookingDTO } from 'Application/Booking/ProvisionalBookingDTO
 import {
   CheckBookingEligibilityApplicationService,
 } from 'Application/Booking/CheckBookingEligibilityApplicationService/CheckBookingEligibilityApplicationService';
+import { IPricingQuery } from 'Application/Pricing/IPricingQuery';
 
 export type CreateProvisionalBookingCommand = {
   carId: string;
-  startAt: string; // ISO (ミリ秒+Z必須)
+  menuId: string;
+  startAt: string; // ISO (ミリ秒+09:00必須)
   durationMinutes: number;
 
   // 業務必須（仮予約でも必須）
   customerName: string;
   phoneNumber: string;
 
-  // カレンダー表示用（任意）
-  carModelName?: string;
-  menuLabel?: string; // 例: "リア5面"
-  channel?: string;   // 例: "LINE"
+  // 受付チャネル（任意）
+  channel?: string; // 例: "LINE"
 };
 
 export class CreateProvisionalBookingApplicationService {
   constructor(
     private readonly availabilityDomainService: BookingSlotAvailabilityDomainService,
     private readonly bookingCalendarEventRepository: IBookingCalendarEventRepository,
+    private readonly pricingQuery: IPricingQuery,
     private readonly eligibilityService?: CheckBookingEligibilityApplicationService,
   ) {}
 
   async execute(command: CreateProvisionalBookingCommand): Promise<ProvisionalBookingDTO> {
     const carId = new CarId(command.carId);
+    const menuId = new MenuId(command.menuId);
     const startAt = new DateTime(command.startAt);
     const duration = new Duration(command.durationMinutes);
     const timeRange = new TimeRange(startAt, duration);
+
+    // 料金表から車種情報とメニュー情報を取得
+    const pricing = await this.pricingQuery.findCarPricing({ carId: carId.value });
+    if (!pricing) {
+      throw new Error('指定された車種が料金表に存在しません');
+    }
+
+    const menuPrice = pricing.prices.find((p) => p.menuId === menuId.value);
+    if (!menuPrice || menuPrice.amount === null) {
+      throw new Error('指定されたメニューが料金表に存在しません');
+    }
 
     // 予約可否判定（恒久）。Presentation層が組み立てた場合のみ適用する。
     if (this.eligibilityService) {
@@ -57,8 +71,18 @@ export class CreateProvisionalBookingApplicationService {
       throw new Error('指定の枠は既に埋まっているか、予約間バッファを確保できません');
     }
 
-    const title = this.buildTitle(command);
-    const description = this.buildDescription(command);
+    const title = this.buildTitle({
+      carName: pricing.carName,
+      menuName: menuPrice.menuName,
+      customerName: command.customerName,
+    });
+    const description = this.buildDescription({
+      carName: pricing.carName,
+      menuName: menuPrice.menuName,
+      customerName: command.customerName,
+      phoneNumber: command.phoneNumber,
+      channel: command.channel,
+    });
 
     // 仮予定を作成（枠を占有するのが目的）
     const { eventId } = await this.bookingCalendarEventRepository.createProvisionalEvent({
@@ -76,23 +100,29 @@ export class CreateProvisionalBookingApplicationService {
     });
   }
 
-  private buildTitle(command: CreateProvisionalBookingCommand): string {
+  private buildTitle(params: {
+    carName: string;
+    menuName: string;
+    customerName: string;
+  }): string {
     // 運用テンプレ：タイトルは検索しやすく
-    // 例：【仮】プリウス リア5面（棚原）
-    const parts: string[] = ['【仮】'];
-    if (command.carModelName) parts.push(command.carModelName);
-    if (command.menuLabel) parts.push(command.menuLabel);
-    parts.push(`（${command.customerName}）`);
-    return parts.join(' ').trim();
+    // 例：【仮】プリウス フロントセット（棚原）
+    return `【仮】${params.carName} ${params.menuName}（${params.customerName}）`;
   }
 
-  private buildDescription(command: CreateProvisionalBookingCommand): string | undefined {
+  private buildDescription(params: {
+    carName: string;
+    menuName: string;
+    customerName: string;
+    phoneNumber: string;
+    channel?: string;
+  }): string | undefined {
     const lines: string[] = [];
-    lines.push(`氏名: ${command.customerName}`);
-    lines.push(`電話番号: ${command.phoneNumber}`);
-    if (command.carModelName) lines.push(`車種: ${command.carModelName}`);
-    if (command.menuLabel) lines.push(`内容: ${command.menuLabel}`);
-    if (command.channel) lines.push(`受付: ${command.channel}`);
+    lines.push(`氏名: ${params.customerName}`);
+    lines.push(`電話番号: ${params.phoneNumber}`);
+    lines.push(`車種: ${params.carName}`);
+    lines.push(`内容: ${params.menuName}`);
+    if (params.channel) lines.push(`受付: ${params.channel}`);
     return lines.length ? lines.join('\n') : undefined;
   }
 }
