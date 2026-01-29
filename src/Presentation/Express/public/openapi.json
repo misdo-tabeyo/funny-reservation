@@ -268,6 +268,106 @@
         }
       }
     }
+    ,
+    "/pricing/manufacturers": {
+      "get": {
+        "operationId": "listPricingManufacturers",
+        "summary": "List manufacturers",
+        "description": "料金表に存在するメーカー（= スプレッドシートのシート一覧）を返します。manufacturerId はシート名そのものです（例: 'トヨタ', 'レクサス'）。",
+        "responses": {
+          "200": {
+            "description": "Manufacturers",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GetManufacturersResult" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/pricing/manufacturers/{manufacturerId}/cars": {
+      "get": {
+        "operationId": "listCarsByManufacturer",
+        "summary": "List cars by manufacturer",
+        "description": "指定メーカー（= シート名）に紐づく車種一覧を返します。",
+        "parameters": [
+          {
+            "name": "manufacturerId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "メーカーID（= シート名）。例: 'トヨタ', 'レクサス'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cars",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GetCarsByManufacturerResult" }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/pricing/prices": {
+      "get": {
+        "operationId": "getPriceList",
+        "summary": "Get pricing",
+        "description": "料金表を取得します。carId は車名そのもの（例: 'プリウス', 'ヴィッツ(リア3角窓あり)'）です。menuId を指定すると該当メニューのみ返します。",
+        "parameters": [
+          {
+            "name": "carId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "車種ID（= 車名そのもの）。日本語・記号を含む場合があります。"
+          },
+          {
+            "name": "menuId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["front-set", "front", "front-left-right", "rear-set", "rear-left-right", "quarter-left-right", "rear"]
+            },
+            "description": "メニューID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Price list",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PriceListDTO" } } }
+          },
+          "404": {
+            "description": "Not found",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "500": {
+            "description": "Server error",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    }
   },
   "components": {
     "securitySchemes": {
@@ -319,7 +419,7 @@
         "properties": {
           "carId": {
             "type": "string",
-            "description": "Car ID (e.g., 'toyota-prius', 'lexus-nx'). Must match pricing table entries."
+            "description": "Car ID (= 車名そのもの)。例: 'プリウス', 'ヴィッツ(リア3角窓あり)'. Must match pricing table entries."
           },
           "menuId": {
             "type": "string",
@@ -408,6 +508,87 @@
         "required": ["message"],
         "properties": {
           "message": { "type": "string" }
+        }
+      }
+      ,
+      "GetManufacturersResult": {
+        "type": "object",
+        "required": ["manufacturers"],
+        "properties": {
+          "manufacturers": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ManufacturerDTO" }
+          }
+        }
+      },
+      "ManufacturerDTO": {
+        "type": "object",
+        "required": ["id", "name", "carCount"],
+        "properties": {
+          "id": { "type": "string", "description": "メーカーID（= シート名）。例: 'トヨタ'" },
+          "name": { "type": "string" },
+          "carCount": { "type": "integer" }
+        }
+      },
+      "GetCarsByManufacturerResult": {
+        "type": "object",
+        "required": ["manufacturer", "cars"],
+        "properties": {
+          "manufacturer": {
+            "type": "object",
+            "required": ["id", "name"],
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" }
+            }
+          },
+          "cars": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CarDTO" }
+          }
+        }
+      },
+      "CarDTO": {
+        "type": "object",
+        "required": ["id", "name", "nameReading", "manufacturer"],
+        "properties": {
+          "id": { "type": "string", "description": "車種ID（= 車名そのもの）" },
+          "name": { "type": "string" },
+          "nameReading": { "type": "string" },
+          "manufacturer": { "type": "string" }
+        }
+      },
+      "PriceListDTO": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CarPricing" }
+          }
+        }
+      },
+      "CarPricing": {
+        "type": "object",
+        "required": ["carId", "carName", "carNameReading", "manufacturer", "prices"],
+        "properties": {
+          "carId": { "type": "string" },
+          "carName": { "type": "string" },
+          "carNameReading": { "type": "string" },
+          "manufacturer": { "type": "string" },
+          "prices": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CarMenuPrice" }
+          }
+        }
+      },
+      "CarMenuPrice": {
+        "type": "object",
+        "required": ["menuId", "menuName", "amount"],
+        "properties": {
+          "menuId": { "type": "string" },
+          "menuName": { "type": "string" },
+          "amount": { "type": ["integer", "null"] }
         }
       }
     }
