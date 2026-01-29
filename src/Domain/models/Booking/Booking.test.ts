@@ -14,8 +14,8 @@ import { PhoneNumber } from './PhoneNumber/PhoneNumber';
 
 describe('Booking', () => {
   const bookingId = new BookingId('bookingId_01');
-  const carId = new CarId('carId_____01');
-  const menuId = new MenuId('menuId____01');
+  const carId = new CarId('toyota-prius');
+  const menuId = MenuId.FRONT_SET;
 
   const option1 = new OptionId('optionId__01');
   const option2 = new OptionId('optionId__02');
@@ -291,8 +291,8 @@ describe('Booking', () => {
         price,
       });
 
-      const nextCarId = new CarId('carId_____02');
-      const nextMenuId = new MenuId('menuId____02');
+      const nextCarId = new CarId('lexus-nx');
+      const nextMenuId = MenuId.REAR_SET;
       const nextOptionIds = [option2];
 
       booking.changeCarId(nextCarId);
@@ -356,8 +356,8 @@ describe('Booking', () => {
         calendarEventId: null,
       });
 
-      const nextCarId = new CarId('carId_____02');
-      const nextMenuId = new MenuId('menuId____02');
+      const nextCarId = new CarId('lexus-nx');
+      const nextMenuId = MenuId.REAR_SET;
 
       expect(() => booking.changeCarId(nextCarId)).toThrow(
         'carIdを変更できません（status=Confirmed）',
