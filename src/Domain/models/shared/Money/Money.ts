@@ -61,4 +61,13 @@ export class Money extends ValueObject<MoneyValue, 'Money'> {
       throw new Error('Moneyの通貨が一致しません');
     }
   }
+
+  /**
+   * 金額（円）から Money を生成
+   * @param amount - 金額（整数）
+   * @returns Money（通貨は JPY 固定）
+   */
+  static fromAmount(amount: number): Money {
+    return new Money({ amount, currency: 'JPY' });
+  }
 }
