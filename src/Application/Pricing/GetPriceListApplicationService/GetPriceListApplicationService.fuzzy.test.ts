@@ -57,16 +57,14 @@ describe('GetPriceListApplicationService (fuzzy carId)', () => {
     ],
   });
 
-  test('exact match is preferred over fuzzy candidates', async () => {
+  test('if fuzzy search has multiple hits (even including exact), it is treated as ambiguous', async () => {
     const query = new FakePricingQuery([
       basePricing('プリウス', 'プリウス', 'トヨタ'),
       basePricing('プリウスα', 'プリウスα', 'トヨタ'),
     ]);
 
     const service = new GetPriceListApplicationService(query);
-    const dto = await service.execute({ carId: 'プリウス' });
-
-    expect(dto.toJSON().car?.id).toBe('プリウス');
+    await expect(service.execute({ carId: 'プリウス' })).rejects.toThrow('車種名が曖昧');
   });
 
   test('single fuzzy match resolves to that car', async () => {

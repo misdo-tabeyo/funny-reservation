@@ -117,15 +117,17 @@ export class GetPriceListApplicationService {
   /**
    * carId(=車名) を解決する。
    *
-   * - 完全一致がある場合はそれを優先
-   * - なければ部分一致検索し、1件ならそれを採用
-   * - 複数件なら曖昧すぎるのでエラー
+   * - 入力に対して部分一致検索し、候補が複数件なら曖昧すぎるのでエラー
+   *   （その中に完全一致が含まれていても「他にも候補がある」なら曖昧扱いにする）
+   * - 候補が1件ならそれを採用
+   * - 候補が0件なら解決不能として、そのまま入力を返す
    */
   private async resolveCarIdFromQuery(input: string): Promise<string> {
-    const exact = await this.pricingQuery.findCarPricing({ carId: input });
-    if (exact) return exact.carId;
-
     const candidates = await this.pricingQuery.searchCarsByName({ nameContains: input });
+    if (candidates.length === 0) {
+      return input;
+    }
+
     if (candidates.length === 1) return candidates[0].id;
 
     if (candidates.length > 1) {
@@ -136,6 +138,7 @@ export class GetPriceListApplicationService {
       throw new Error(`車種名が曖昧です。候補: ${names}`);
     }
 
+    // 上の分岐で必ず return / throw するが、型のために明示しておく
     return input;
   }
 }
