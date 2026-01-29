@@ -144,7 +144,7 @@
             }
           },
           "409": {
-            "description": "Booking is not bookable",
+            "description": "Conflict (not bookable)",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }
@@ -229,7 +229,7 @@
               "maximum": 90,
               "minimum": 1
             },
-            "description": "How many days to look ahead (default 14, max 90)"
+            "description": "How many days to look ahead (default 14, min 1, max 90). Server clamps to range."
           }
         ],
         "responses": {
@@ -454,7 +454,7 @@
             "type": "string",
             "format": "date-time",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+09:00$",
-            "description": "Canonical JST datetime (YYYY-MM-DDTHH:mm:ss.SSS+09:00)."
+            "description": "Canonical JST datetime (YYYY-MM-DDTHH:mm:ss.SSS+09:00). Note: this API always uses +09:00 (JST); it does not use 'Z' (UTC) representation."
           },
           "durationMinutes": {
             "type": "integer",
