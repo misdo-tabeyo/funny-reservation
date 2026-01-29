@@ -2,7 +2,7 @@ import { ValueObject } from 'Domain/models/shared/ValueObject';
 
 /**
  * 車種を識別するID
- * 料金表の車種IDとして使用（例: "toyota-prius", "lexus-rx"）
+ * 料金表の車種IDとして使用（例: "プリウス", "ヴィッツ(リア3角窓あり)"）
  */
 export class CarId extends ValueObject<string, 'CarId'> {
   static readonly MIN_LENGTH = 1;

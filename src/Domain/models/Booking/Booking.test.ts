@@ -14,7 +14,7 @@ import { PhoneNumber } from './PhoneNumber/PhoneNumber';
 
 describe('Booking', () => {
   const bookingId = new BookingId('bookingId_01');
-  const carId = new CarId('toyota-prius');
+  const carId = new CarId('プリウス');
   const menuId = MenuId.FRONT_SET;
 
   const option1 = new OptionId('optionId__01');
@@ -291,7 +291,7 @@ describe('Booking', () => {
         price,
       });
 
-      const nextCarId = new CarId('lexus-nx');
+  const nextCarId = new CarId('レクサス NX');
       const nextMenuId = MenuId.REAR_SET;
       const nextOptionIds = [option2];
 
@@ -356,7 +356,7 @@ describe('Booking', () => {
         calendarEventId: null,
       });
 
-      const nextCarId = new CarId('lexus-nx');
+  const nextCarId = new CarId('レクサス NX');
       const nextMenuId = MenuId.REAR_SET;
 
       expect(() => booking.changeCarId(nextCarId)).toThrow(

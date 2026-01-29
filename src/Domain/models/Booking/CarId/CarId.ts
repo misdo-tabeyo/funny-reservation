@@ -2,7 +2,7 @@ import { ValueObject } from 'Domain/models/shared/ValueObject';
 
 /**
  * 車種を識別するID
- * 料金表の車種IDと同じ形式（例: "toyota-prius", "lexus-rx"）
+ * 料金表の車種IDと同じ形式（例: "プリウス", "ヴィッツ(リア3角窓あり)"）
  *
  * 注: 以前は nanoid() で生成していたが、料金表との統合のため
  * Pricing ドメインと同じ形式に変更

@@ -300,8 +300,8 @@ app.get('/pricing/manufacturers/:manufacturerId/cars', async (req: Request, res:
 /**
  * 料金表取得
  * GET /pricing/prices
- * GET /pricing/prices?carId=toyota-prius
- * GET /pricing/prices?carId=toyota-prius&menuId=front-set
+ * GET /pricing/prices?carId=プリウス
+ * GET /pricing/prices?carId=プリウス&menuId=front-set
  */
 app.get('/pricing/prices', async (req: Request, res: Response) => {
   try {

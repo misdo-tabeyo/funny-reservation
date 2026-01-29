@@ -2,7 +2,7 @@
  * メーカーの概要情報
  */
 export type ManufacturerSummary = {
-  id: string; // 例: "toyota"
+  id: string; // 例: "トヨタ"（シート名そのもの）
   name: string; // 例: "トヨタ"
   carCount: number; // メーカーの車種数
 };
@@ -11,7 +11,7 @@ export type ManufacturerSummary = {
  * 車種の概要情報
  */
 export type CarSummary = {
-  id: string; // 例: "toyota-prius"
+  id: string; // 例: "プリウス"（車名そのもの）
   name: string; // 例: "プリウス"
   nameReading: string; // 例: "プリウス"
   manufacturer: string; // 例: "トヨタ"
@@ -50,21 +50,21 @@ export interface IPricingQuery {
 
   /**
    * 指定メーカーの車種一覧を取得
-   * @param params.manufacturerId - メーカーID（例: "toyota"）
+  * @param params.manufacturerId - メーカーID（例: "トヨタ"）
    * @returns 車種の概要情報の配列
    */
   listCarsByManufacturer(params: { manufacturerId: string }): Promise<CarSummary[]>;
 
   /**
    * 指定車種の料金情報を取得
-   * @param params.carId - 車種ID（例: "toyota-prius"）
+  * @param params.carId - 車種ID（例: "プリウス"）
    * @returns 車種の料金情報、見つからない場合は null
    */
   findCarPricing(params: { carId: string }): Promise<CarPricing | null>;
 
   /**
    * 指定車種・メニューの料金を取得
-   * @param params.carId - 車種ID（例: "toyota-prius"）
+  * @param params.carId - 車種ID（例: "プリウス"）
    * @param params.menuId - メニューID（例: "front-set"）
    * @returns 料金（円）、見つからない場合は null
    */

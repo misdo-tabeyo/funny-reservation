@@ -3,15 +3,15 @@ import { CarId } from './CarId';
 describe('CarId', () => {
   // 正常系
   test('有効なフォーマットの場合 canonical が生成される', () => {
-    expect(new CarId('toyota-prius').value).toBe('toyota-prius');
-    expect(new CarId('lexus-nx').value).toBe('lexus-nx');
+    expect(new CarId('プリウス').value).toBe('プリウス');
+    expect(new CarId('レクサス NX').value).toBe('レクサス NX');
     expect(new CarId('ヴィッツ(リア3角窓あり)').value).toBe('ヴィッツ(リア3角窓あり)');
   });
 
   test('equals', () => {
-    const a = new CarId('toyota-prius');
-    const b = new CarId('toyota-prius');
-    const c = new CarId('lexus-nx');
+    const a = new CarId('プリウス');
+    const b = new CarId('プリウス');
+    const c = new CarId('レクサス NX');
     expect(a.equals(b)).toBeTruthy();
     expect(a.equals(c)).toBeFalsy();
   });

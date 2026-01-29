@@ -51,7 +51,7 @@ class FakePricingQuery implements IPricingQuery {
   // eslint-disable-next-line @typescript-eslint/require-await
   async findCarPricing(): Promise<CarPricing> {
     return {
-      carId: 'toyota-prius',
+      carId: 'プリウス',
       carName: 'プリウス',
       carNameReading: 'ぷりうす',
       manufacturer: 'トヨタ',
@@ -92,7 +92,7 @@ describe('CreateProvisionalBookingApplicationService', () => {
     // 営業時間外
     await expect(
       svc.execute({
-        carId: 'toyota-prius',
+        carId: 'プリウス',
         menuId: 'front-set',
         startAt: '2026-01-18T09:00:00.000+09:00',
         durationMinutes: 60,
@@ -117,7 +117,7 @@ describe('CreateProvisionalBookingApplicationService', () => {
     );
 
     const dto = await svc.execute({
-      carId: 'toyota-prius',
+      carId: 'プリウス',
       menuId: 'front-set',
       startAt: '2026-01-18T10:00:00.000+09:00',
       durationMinutes: 60,
@@ -126,7 +126,7 @@ describe('CreateProvisionalBookingApplicationService', () => {
     });
 
     expect(dto.toJSON()).toEqual({
-      carId: 'toyota-prius',
+      carId: 'プリウス',
       startAt: '2026-01-18T10:00:00.000+09:00',
       durationMinutes: 60,
       calendarEventId: 'event-1',
