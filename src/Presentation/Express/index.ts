@@ -27,12 +27,23 @@ import { GoogleCalendarBookingCalendarEventRepository } from '../../Infrastructu
 import { GoogleCalendarBookingCalendarEventQuery } from '../../Infrastructure/Booking/GoogleCalendarBookingCalendarEventQuery';
 import { GoogleCalendarClient } from '../../Infrastructure/GoogleCalendar/GoogleCalendarClient';
 
+import { GetManufacturersApplicationService } from '../../Application/Pricing/GetManufacturersApplicationService/GetManufacturersApplicationService';
+import { GetCarsByManufacturerApplicationService } from '../../Application/Pricing/GetCarsByManufacturerApplicationService/GetCarsByManufacturerApplicationService';
+import {
+  GetPriceListApplicationService,
+  GetPriceListQuery,
+} from '../../Application/Pricing/GetPriceListApplicationService/GetPriceListApplicationService';
+
+import { GoogleSheetsClient } from '../../Infrastructure/GoogleSheets/GoogleSheetsClient';
+import { GoogleSheetsPricingQuery } from '../../Infrastructure/Pricing/GoogleSheetsPricingQuery';
+
 import path from 'node:path';
 
 import {
   validateCreateProvisionalBookingCommand,
   validateCheckAvailabilityQuery,
   validateNearestAvailableSlotsQuery,
+  validateGetPriceListQuery,
 } from './requestValidation';
 
 const app = express();
@@ -139,6 +150,45 @@ function buildGoogleCalendarBookingCalendarEventQuery(): GoogleCalendarBookingCa
 }
 
 /**
+ * Google Sheets の環境変数取得
+ */
+function getGoogleSheetsEnv(): {
+  serviceAccountEmail: string;
+  privateKey: string;
+  spreadsheetId: string;
+} {
+  const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+
+  if (!serviceAccountEmail || !privateKey || !spreadsheetId) {
+    throw new Error(
+      'Google Sheets設定が不足しています（GOOGLE_SERVICE_ACCOUNT_EMAIL / GOOGLE_PRIVATE_KEY / GOOGLE_SHEETS_SPREADSHEET_ID）',
+    );
+  }
+
+  return {
+    serviceAccountEmail,
+    privateKey: privateKey.replace(/\\n/g, '\n'),
+    spreadsheetId,
+  };
+}
+
+function buildGoogleSheetsClient(): GoogleSheetsClient {
+  const env = getGoogleSheetsEnv();
+  return new GoogleSheetsClient({
+    serviceAccountEmail: env.serviceAccountEmail,
+    privateKey: env.privateKey,
+  });
+}
+
+function buildPricingQuery(): GoogleSheetsPricingQuery {
+  const env = getGoogleSheetsEnv();
+  const client = buildGoogleSheetsClient();
+  return new GoogleSheetsPricingQuery(client, env.spreadsheetId);
+}
+
+/**
  * 空き確認
  * GET /booking/availability?startAt=...&durationMinutes=60
  */
@@ -201,6 +251,80 @@ app.get('/booking/available-slots/nearest', requireAuth, async (req: Request, re
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });
+  }
+});
+
+/**
+ * メーカー一覧取得
+ * GET /pricing/manufacturers
+ */
+app.get('/pricing/manufacturers', async (_req: Request, res: Response) => {
+  try {
+    const pricingQuery = buildPricingQuery();
+    const applicationService = new GetManufacturersApplicationService(pricingQuery);
+
+    const result = await applicationService.execute();
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: (error as Error).message });
+  }
+});
+
+/**
+ * メーカー別車種一覧取得
+ * GET /pricing/manufacturers/:manufacturerId/cars
+ */
+app.get('/pricing/manufacturers/:manufacturerId/cars', async (req: Request, res: Response) => {
+  try {
+    const manufacturerId = req.params.manufacturerId;
+    if (typeof manufacturerId !== 'string') {
+      res.status(400).json({ message: 'Invalid manufacturerId parameter' });
+      return;
+    }
+
+    const pricingQuery = buildPricingQuery();
+    const applicationService = new GetCarsByManufacturerApplicationService(pricingQuery);
+
+    const result = await applicationService.execute({ manufacturerId });
+    res.status(200).json(result);
+  } catch (error) {
+    const message = (error as Error).message;
+    if (message.includes('未対応のメーカー')) {
+      res.status(404).json({ message });
+      return;
+    }
+    res.status(500).json({ message });
+  }
+});
+
+/**
+ * 料金表取得
+ * GET /pricing/prices
+ * GET /pricing/prices?carId=toyota-prius
+ * GET /pricing/prices?carId=toyota-prius&menuId=front-set
+ */
+app.get('/pricing/prices', async (req: Request, res: Response) => {
+  try {
+    const validated = validateGetPriceListQuery(req.query);
+    if (!validated.ok) {
+      res.status(400).json({ message: validated.message });
+      return;
+    }
+
+    const query: GetPriceListQuery = validated.value;
+
+    const pricingQuery = buildPricingQuery();
+    const applicationService = new GetPriceListApplicationService(pricingQuery);
+
+    const dto = await applicationService.execute(query);
+    res.status(200).json(dto.toJSON());
+  } catch (error) {
+    const message = (error as Error).message;
+    if (message.includes('見つかりません')) {
+      res.status(404).json({ message });
+      return;
+    }
+    res.status(500).json({ message });
   }
 });
 

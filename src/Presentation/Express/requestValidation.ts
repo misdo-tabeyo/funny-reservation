@@ -1,4 +1,5 @@
 import { CreateProvisionalBookingCommand } from '../../Application/Booking/CreateProvisionalBookingApplicationService/CreateProvisionalBookingApplicationService';
+import { GetPriceListQuery } from '../../Application/Pricing/GetPriceListApplicationService/GetPriceListApplicationService';
 import { DateTime } from '../../Domain/models/shared/DateTime/DateTime';
 
 export type ValidationResult<T> =
@@ -199,6 +200,29 @@ export function validateCheckAvailabilityQuery(query: unknown): ValidationResult
     value: {
       startAt: normalizedStartAt.value,
       durationMinutes,
+    },
+  };
+}
+
+export function validateGetPriceListQuery(query: unknown): ValidationResult<GetPriceListQuery> {
+  if (!query || typeof query !== 'object') {
+    return { ok: false, message: 'Invalid query' };
+  }
+
+  const q = query as Record<string, unknown>;
+
+  const carId = typeof q.carId === 'string' ? q.carId.trim() : undefined;
+  const menuId = typeof q.menuId === 'string' ? q.menuId.trim() : undefined;
+
+  // carId が空文字列の場合は undefined として扱う
+  const validCarId = carId && carId.length > 0 ? carId : undefined;
+  const validMenuId = menuId && menuId.length > 0 ? menuId : undefined;
+
+  return {
+    ok: true,
+    value: {
+      carId: validCarId,
+      menuId: validMenuId,
     },
   };
 }
