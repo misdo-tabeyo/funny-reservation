@@ -29,8 +29,12 @@ describe('CarId', () => {
     expect(() => new CarId('a'.repeat(101))).toThrow('CarIdの文字数が不正です');
   });
 
-  test('制御文字を含む場合にエラーを投げる', () => {
-    expect(() => new CarId('prius\n')).toThrow('不正なCarIdの形式です');
+  test('Google Sheets のセル内改行/タブは許容する（複数行表記を想定）', () => {
+    expect(new CarId('prius\n(variant)').value).toBe('prius\n(variant)');
+    expect(new CarId('prius\t(variant)').value).toBe('prius\t(variant)');
+  });
+
+  test('NUL(\\u0000) は拒否する', () => {
     expect(() => new CarId('prius\u0000')).toThrow('不正なCarIdの形式です');
   });
 });

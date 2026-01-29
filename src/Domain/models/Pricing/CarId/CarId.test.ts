@@ -10,8 +10,14 @@ describe('Pricing.CarId', () => {
     expect(new CarId('  プリウス  ').value).toBe('  プリウス  ');
   });
 
-  test('制御文字（改行など）は拒否する', () => {
-    expect(() => new CarId('プリウス\n')).toThrow('不正なCarIdの形式です');
+  test('Google Sheets のセル内改行/タブは許容する（複数行表記を想定）', () => {
+    expect(new CarId('タウンエース\n(リア・スライドガラスあり)').value).toBe(
+      'タウンエース\n(リア・スライドガラスあり)',
+    );
+    expect(new CarId('プリウス\t(特別仕様)').value).toBe('プリウス\t(特別仕様)');
+  });
+
+  test('NUL(\\u0000) は拒否する', () => {
     expect(() => new CarId('プリウス\u0000')).toThrow('不正なCarIdの形式です');
   });
 });

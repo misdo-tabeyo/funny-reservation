@@ -14,7 +14,14 @@ export class CarId extends ValueObject<string, 'CarId'> {
    * - 変更可能な前提（後方互換不要）
    * - 日本語/記号（例: "ヴィッツ(リア3角窓あり)", "タウンエース\n(リア・スライドガラスあり)"）を許容
    */
-  static readonly FORBIDDEN_CHARS = /[\u0000-\u001f\u007f]/; // 制御文字は不可
+  /**
+   * Google Sheets のセル内改行（\n）を許容したいので、全面的な制御文字禁止にはしない。
+   *
+   * - NUL(\u0000) はデータ破損/取り扱い事故の温床になりやすいので引き続き禁止
+   * - DEL(\u007f) も禁止
+   * - タブ/改行(\t, \n, \r)は、Google Sheets 側で車名を複数行表記する運用があり得るため許容
+   */
+  static readonly FORBIDDEN_CHARS = /[\u0000\u007f]/;
 
   constructor(value: string) {
     super(value);
@@ -26,7 +33,7 @@ export class CarId extends ValueObject<string, 'CarId'> {
       throw new Error('CarIdの文字数が不正です');
     }
 
-    // trim 後では検知できない末尾改行などもあるため、元の value でチェックする
+    // trim 後では検知できない末尾の不可視文字などもあるため、元の value でチェックする
     if (CarId.FORBIDDEN_CHARS.test(value)) {
       throw new Error('不正なCarIdの形式です（制御文字は使用できません）');
     }

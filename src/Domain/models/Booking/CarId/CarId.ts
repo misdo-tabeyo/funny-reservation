@@ -14,7 +14,13 @@ export class CarId extends ValueObject<string, 'CarId'> {
    * Pricing ドメイン（料金表）と同じく、ID は文字種制限をかけない。
    * 車名をそのまま ID として扱う運用を想定。
    */
-  static readonly FORBIDDEN_CHARS = /[\u0000-\u001f\u007f]/; // 制御文字は不可
+  /**
+   * Pricing ドメイン（料金表）と同じく、Google Sheets のセル内改行などを許容する。
+   *
+   * - NUL(\u0000) は禁止
+   * - DEL(\u007f) も禁止
+   */
+  static readonly FORBIDDEN_CHARS = /[\u0000\u007f]/;
 
   constructor(value: string) {
     super(value);
