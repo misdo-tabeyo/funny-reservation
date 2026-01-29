@@ -315,9 +315,17 @@
       },
       "CreateProvisionalBookingCommand": {
         "type": "object",
-        "required": ["carId", "startAt", "durationMinutes", "customerName", "phoneNumber"],
+        "required": ["carId", "menuId", "startAt", "durationMinutes", "customerName", "phoneNumber"],
         "properties": {
-          "carId": { "type": "string" },
+          "carId": {
+            "type": "string",
+            "description": "Car ID (e.g., 'toyota-prius', 'lexus-nx'). Must match pricing table entries."
+          },
+          "menuId": {
+            "type": "string",
+            "description": "Menu ID (e.g., 'front-set', 'rear-set'). Must match pricing table entries.",
+            "enum": ["front-set", "front", "front-left-right", "rear-set", "rear-left-right", "quarter-left-right", "rear"]
+          },
           "startAt": {
             "type": "string",
             "format": "date-time",
@@ -331,9 +339,10 @@
           },
           "customerName": { "type": "string" },
           "phoneNumber": { "type": "string" },
-          "carModelName": { "type": "string" },
-          "menuLabel": { "type": "string" },
-          "channel": { "type": "string" }
+          "channel": {
+            "type": "string",
+            "description": "Optional reception channel (e.g., 'LINE', 'Phone', 'Web')"
+          }
         }
       },
       "ProvisionalBookingDTO": {
