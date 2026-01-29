@@ -56,6 +56,14 @@ export interface IPricingQuery {
   listCarsByManufacturer(params: { manufacturerId: string }): Promise<CarSummary[]>;
 
   /**
+   * 車名の検索（部分一致）
+   *
+   * - manufacturerId を指定すると、そのメーカー内のみ検索
+   * - 空白は trim して扱う想定（ValueObject ではなく Query 側の責務）
+   */
+  searchCarsByName(params: { nameContains: string; manufacturerId?: string }): Promise<CarSummary[]>;
+
+  /**
    * 指定車種の料金情報を取得
   * @param params.carId - 車種ID（例: "プリウス"）
    * @returns 車種の料金情報、見つからない場合は null

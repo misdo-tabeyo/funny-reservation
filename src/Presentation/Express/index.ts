@@ -321,6 +321,10 @@ app.get('/pricing/prices', async (req: Request, res: Response) => {
     res.status(200).json(dto.toJSON());
   } catch (error) {
     const message = (error as Error).message;
+    if (message.includes('車種名が曖昧')) {
+      res.status(400).json({ message });
+      return;
+    }
     if (message.includes('見つかりません')) {
       res.status(404).json({ message });
       return;

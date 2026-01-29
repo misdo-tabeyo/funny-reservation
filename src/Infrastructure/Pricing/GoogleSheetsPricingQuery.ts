@@ -135,6 +135,38 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
     return cars;
   }
 
+  async searchCarsByName(params: {
+    nameContains: string;
+    manufacturerId?: string;
+  }): Promise<CarSummary[]> {
+    const keyword = params.nameContains.trim();
+    if (!keyword) return [];
+
+    const normalizedKeyword = keyword.toLocaleLowerCase('ja-JP');
+
+    const allPricings = await this.listAllCarPricings();
+
+    const matched = allPricings.filter((p) => {
+      if (params.manufacturerId && p.manufacturer !== params.manufacturerId) return false;
+      const normalizedName = p.carName.toLocaleLowerCase('ja-JP');
+      return normalizedName.includes(normalizedKeyword);
+    });
+
+    // carId (=carName) の重複があり得るので重複排除
+    const uniqueById = new Map<string, CarSummary>();
+    for (const p of matched) {
+      if (uniqueById.has(p.carId)) continue;
+      uniqueById.set(p.carId, {
+        id: p.carId,
+        name: p.carName,
+        nameReading: p.carNameReading,
+        manufacturer: p.manufacturer,
+      });
+    }
+
+    return [...uniqueById.values()];
+  }
+
   async findCarPricing(params: { carId: string }): Promise<CarPricing | null> {
     const allPricings = await this.listAllCarPricings();
     return allPricings.find((p) => p.carId === params.carId) ?? null;

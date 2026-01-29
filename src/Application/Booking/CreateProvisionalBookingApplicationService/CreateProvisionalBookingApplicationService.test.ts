@@ -49,6 +49,11 @@ class FakePricingQuery implements IPricingQuery {
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
+  async searchCarsByName(): Promise<never[]> {
+    return [];
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
   async findCarPricing(): Promise<CarPricing> {
     return {
       carId: 'プリウス',

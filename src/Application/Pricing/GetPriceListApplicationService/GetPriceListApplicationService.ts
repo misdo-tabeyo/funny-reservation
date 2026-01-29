@@ -38,7 +38,8 @@ export class GetPriceListApplicationService {
     const carIdVO = new CarId(carId);
     const menuIdVO = new FilmMenuId(menuId);
 
-    const pricing = await this.pricingQuery.findCarPricing({ carId: carIdVO.value });
+    const resolvedCarId = await this.resolveCarIdFromQuery(carIdVO.value);
+    const pricing = await this.pricingQuery.findCarPricing({ carId: resolvedCarId });
     if (!pricing) {
       throw new Error('指定された車種が見つかりません');
     }
@@ -66,7 +67,8 @@ export class GetPriceListApplicationService {
     // バリデーション
     const carIdVO = new CarId(carId);
 
-    const pricing = await this.pricingQuery.findCarPricing({ carId: carIdVO.value });
+    const resolvedCarId = await this.resolveCarIdFromQuery(carIdVO.value);
+    const pricing = await this.pricingQuery.findCarPricing({ carId: resolvedCarId });
     if (!pricing) {
       throw new Error('指定された車種が見つかりません');
     }
@@ -110,5 +112,30 @@ export class GetPriceListApplicationService {
     }));
 
     return PriceListDTO.createFullList(pricings);
+  }
+
+  /**
+   * carId(=車名) を解決する。
+   *
+   * - 完全一致がある場合はそれを優先
+   * - なければ部分一致検索し、1件ならそれを採用
+   * - 複数件なら曖昧すぎるのでエラー
+   */
+  private async resolveCarIdFromQuery(input: string): Promise<string> {
+    const exact = await this.pricingQuery.findCarPricing({ carId: input });
+    if (exact) return exact.carId;
+
+    const candidates = await this.pricingQuery.searchCarsByName({ nameContains: input });
+    if (candidates.length === 1) return candidates[0].id;
+
+    if (candidates.length > 1) {
+      const names = candidates
+        .slice(0, 10)
+        .map((c) => `${c.name}(${c.manufacturer})`)
+        .join(', ');
+      throw new Error(`車種名が曖昧です。候補: ${names}`);
+    }
+
+    return input;
   }
 }
