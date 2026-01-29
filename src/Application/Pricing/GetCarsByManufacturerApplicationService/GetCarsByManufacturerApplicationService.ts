@@ -21,7 +21,7 @@ export class GetCarsByManufacturerApplicationService {
   constructor(private readonly pricingQuery: IPricingQuery) {}
 
   async execute(query: GetCarsByManufacturerQuery): Promise<GetCarsByManufacturerResult> {
-    // メーカーIDのバリデーション
+    // メーカーIDのバリデーション（manufacturerId はシート名と同値扱い）
     const manufacturerId = new ManufacturerId(query.manufacturerId);
 
     const cars = await this.pricingQuery.listCarsByManufacturer({

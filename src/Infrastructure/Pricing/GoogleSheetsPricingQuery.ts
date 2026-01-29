@@ -14,18 +14,10 @@ import { FilmMenuId } from 'Domain/models/Pricing/FilmMenuId/FilmMenuId';
  * Google Sheets から料金情報を取得するクエリ実装
  */
 export class GoogleSheetsPricingQuery implements IPricingQuery {
-  // シート名 → メーカーID のマッピング
-  private static readonly SHEET_TO_MANUFACTURER: Record<string, string> = {
-    トヨタ: 'toyota',
-    レクサス: 'lexus',
-    ホンダ: 'honda',
-    日産: 'nissan',
-    マツダ: 'mazda',
-    スバル: 'subaru',
-    スズキ: 'suzuki',
-    ダイハツ: 'daihatsu',
-    三菱: 'mitsubishi',
-  };
+  // シート名をそのまま manufacturerId として扱う（列構成変更なしで拡張可能にする）
+  private static toManufacturerId(sheetName: string): ManufacturerId {
+    return new ManufacturerId(sheetName);
+  }
 
   // 料金表の列インデックス（0始まり）
   private static readonly COLUMN_INDEX = {
@@ -66,8 +58,13 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
     const manufacturers: ManufacturerSummary[] = [];
 
     for (const sheetName of sheetNames) {
-      const manufacturerId = GoogleSheetsPricingQuery.SHEET_TO_MANUFACTURER[sheetName];
-      if (!manufacturerId) continue; // マッピングに存在しないシートはスキップ
+      // 料金表以外のシートが混ざっても落ちないよう、まず ID として妥当かをチェック
+      let manufacturerIdVO: ManufacturerId;
+      try {
+        manufacturerIdVO = GoogleSheetsPricingQuery.toManufacturerId(sheetName);
+      } catch {
+        continue;
+      }
 
       const data = await this.client.getValues({
         spreadsheetId: this.spreadsheetId,
@@ -80,10 +77,8 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
         return !!carName; // 車種名が存在する行のみカウント
       });
 
-      const manufacturerIdVO = new ManufacturerId(manufacturerId);
-
       manufacturers.push({
-        id: manufacturerId,
+        id: manufacturerIdVO.value,
         name: manufacturerIdVO.getDisplayName(),
         carCount: dataRows.length,
       });
@@ -93,10 +88,8 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
   }
 
   async listCarsByManufacturer(params: { manufacturerId: string }): Promise<CarSummary[]> {
-    const sheetName = this.getSheetNameByManufacturerId(params.manufacturerId);
-    if (!sheetName) {
-      throw new Error(`未対応のメーカーID: ${params.manufacturerId}`);
-    }
+    // manufacturerId はシート名と同値扱い
+    const sheetName = params.manufacturerId;
 
     const data = await this.client.getValues({
       spreadsheetId: this.spreadsheetId,
@@ -163,8 +156,12 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
     const allPricings: CarPricing[] = [];
 
     for (const sheetName of sheetNames) {
-      const manufacturerId = GoogleSheetsPricingQuery.SHEET_TO_MANUFACTURER[sheetName];
-      if (!manufacturerId) continue;
+      // 料金表以外のシートが混ざっても落ちないようにスキップ
+      try {
+        GoogleSheetsPricingQuery.toManufacturerId(sheetName);
+      } catch {
+        continue;
+      }
 
       const pricings = await this.getPricingsFromSheet(sheetName);
       allPricings.push(...pricings);
@@ -253,15 +250,4 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
     return Number.isNaN(num) ? null : num;
   }
 
-  /**
-   * メーカーIDからシート名を取得
-   */
-  private getSheetNameByManufacturerId(manufacturerId: string): string | null {
-    for (const [sheetName, id] of Object.entries(
-      GoogleSheetsPricingQuery.SHEET_TO_MANUFACTURER,
-    )) {
-      if (id === manufacturerId) return sheetName;
-    }
-    return null;
-  }
 }
