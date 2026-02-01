@@ -39,7 +39,7 @@ describe('CheckBookingEligibilityApplicationService', () => {
 
     const result = await svc.execute({
       startAt: '2026-01-18T09:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
     });
 
     expect(result.bookable).toBe(false);
@@ -54,7 +54,7 @@ describe('CheckBookingEligibilityApplicationService', () => {
 
     const result = await svc.execute({
       startAt: '2026-01-18T14:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
     });
 
     expect(result.bookable).toBe(false);
@@ -69,7 +69,7 @@ describe('CheckBookingEligibilityApplicationService', () => {
 
     const result = await svc.execute({
       startAt: '2026-01-18T11:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
     });
 
     expect(result.bookable).toBe(true);

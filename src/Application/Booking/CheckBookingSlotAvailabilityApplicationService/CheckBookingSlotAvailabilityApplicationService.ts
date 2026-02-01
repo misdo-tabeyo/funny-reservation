@@ -7,7 +7,7 @@ import {
 
 export type CheckBookingSlotAvailabilityQuery = {
   startAt: string; // ISO文字列想定
-  durationMinutes: number;
+  durationHours: number;
 };
 
 export type CheckBookingSlotAvailabilityResult = {
@@ -19,13 +19,13 @@ export class CheckBookingSlotAvailabilityApplicationService {
 
   async execute(query: CheckBookingSlotAvailabilityQuery): Promise<CheckBookingSlotAvailabilityResult> {
     if (!query.startAt) throw new Error('startAt is required');
-    if (!Number.isFinite(query.durationMinutes) || query.durationMinutes <= 0) {
-      throw new Error('durationMinutes must be a positive number');
+    if (!Number.isFinite(query.durationHours) || query.durationHours <= 0) {
+      throw new Error('durationHours must be a positive number');
     }
 
     const timeRange = new TimeRange(
       new DateTime(query.startAt),
-      new Duration(query.durationMinutes),
+      new Duration(query.durationHours),
     );
 
     const exists = await this.availabilityQuery.existsUnavailableSlot({ timeRange, bufferMinutes: 60 });

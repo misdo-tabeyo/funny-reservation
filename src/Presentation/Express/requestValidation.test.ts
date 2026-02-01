@@ -10,7 +10,7 @@ describe('validateCreateProvisionalBookingCommand', () => {
       carId: 'プリウス',
       menuId: 'front-set',
       startAt: '2024-01-01T09:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
       customerName: '山田太郎',
       phoneNumber: '090-1234-5678',
       channel: 'LINE',
@@ -30,7 +30,7 @@ describe('validateCreateProvisionalBookingCommand', () => {
       carId: 'プリウス',
       menuId: 'front-set',
       startAt: '2024-01-01T09:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
       customerName: '山田太郎',
       phoneNumber: '090-1234-5678',
     });
@@ -46,7 +46,7 @@ describe('validateCreateProvisionalBookingCommand', () => {
       carId: 'プリウス',
       menuId: 'front-set',
       startAt: '2024-01-01T09:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
       customerName: '   ',
       phoneNumber: '090-1234-5678',
     });
@@ -59,7 +59,7 @@ describe('validateCreateProvisionalBookingCommand', () => {
       carId: 'プリウス',
       menuId: 'front-set',
       startAt: '2024-01-01T09:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
       customerName: '山田太郎',
     });
 
@@ -71,7 +71,7 @@ describe('validateNearestAvailableSlotsQuery', () => {
   it('必須項目が揃っていれば ok=true', () => {
     const result = validateNearestAvailableSlotsQuery({
       from: '2026-01-18T10:00:00.000+09:00',
-      durationMinutes: '60',
+      durationHours: '1',
       limit: '5',
       searchDays: '30',
     });
@@ -81,7 +81,7 @@ describe('validateNearestAvailableSlotsQuery', () => {
 
     expect(result.value).toEqual({
         from: '2026-01-18T10:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
       limit: 5,
       searchDays: 30,
     });
@@ -90,7 +90,7 @@ describe('validateNearestAvailableSlotsQuery', () => {
   it('from が秒/ミリ秒省略でも canonical(+09:00) に正規化される', () => {
     const result = validateNearestAvailableSlotsQuery({
       from: '2026-01-18T10:00+09:00',
-      durationMinutes: '60',
+      durationHours: '1',
     });
 
     expect(result.ok).toBe(true);
@@ -102,7 +102,7 @@ describe('validateNearestAvailableSlotsQuery', () => {
   it('from が不正なら ok=false', () => {
     const result = validateNearestAvailableSlotsQuery({
       from: 'not-a-date',
-      durationMinutes: '60',
+      durationHours: '1',
     });
 
     expect(result).toEqual({
@@ -111,14 +111,14 @@ describe('validateNearestAvailableSlotsQuery', () => {
     });
   });
 
-  it('durationMinutes が60の倍数でなければ ok=false', () => {
+  it('durationHours が整数でなければ ok=false', () => {
     const result = validateNearestAvailableSlotsQuery({
-      durationMinutes: '90',
+      durationHours: '1.5',
     });
 
     expect(result).toEqual({
       ok: false,
-      message: 'durationMinutes must be an integer (>=60, multiple of 60)',
+      message: 'durationHours must be an integer (>=1)',
     });
   });
 });
@@ -127,7 +127,7 @@ describe('validateCheckAvailabilityQuery', () => {
   it('必須項目が揃っていれば ok=true（startAtはcanonicalに正規化）', () => {
     const result = validateCheckAvailabilityQuery({
         startAt: '2024-01-01T09:00:00.000+09:00',
-      durationMinutes: '60',
+      durationHours: '1',
     });
 
     expect(result.ok).toBe(true);
@@ -135,14 +135,14 @@ describe('validateCheckAvailabilityQuery', () => {
 
     expect(result.value).toEqual({
         startAt: '2024-01-01T09:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
     });
   });
 
   it('startAt が不正なら ok=false', () => {
     const result = validateCheckAvailabilityQuery({
       startAt: 'not-a-date',
-      durationMinutes: '60',
+      durationHours: '1',
     });
 
     expect(result).toEqual({
@@ -151,15 +151,15 @@ describe('validateCheckAvailabilityQuery', () => {
     });
   });
 
-  it('durationMinutes が60の倍数でなければ ok=false', () => {
+  it('durationHours が整数でなければ ok=false', () => {
     const result = validateCheckAvailabilityQuery({
         startAt: '2024-01-01T00:00:00.000+09:00',
-      durationMinutes: '90',
+      durationHours: '1.5',
     });
 
     expect(result).toEqual({
       ok: false,
-      message: 'durationMinutes must be an integer (>=60, multiple of 60)',
+      message: 'durationHours must be an integer (>=1)',
     });
   });
 });

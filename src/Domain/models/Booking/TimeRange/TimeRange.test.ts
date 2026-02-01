@@ -6,17 +6,17 @@ describe('TimeRange', () => {
   // 正常系
   test('有効なフォーマットの場合 TimeRange が生成される', () => {
       const startAt = new DateTime('2026-01-04T00:00:00.000+09:00');
-    const duration = Duration.fromHours(2);
+    const duration = new Duration(2);
 
     const range = new TimeRange(startAt, duration);
 
       expect(range.startAt.value).toBe('2026-01-04T00:00:00.000+09:00');
-    expect(range.duration.minutes).toBe(120);
+    expect(range.duration.hours).toBe(2);
   });
 
   test('endAt が startAt + duration になる', () => {
       const startAt = new DateTime('2026-01-04T00:00:00.000+09:00');
-    const duration = Duration.fromHours(3);
+    const duration = new Duration(3);
 
     const range = new TimeRange(startAt, duration);
 
@@ -26,11 +26,11 @@ describe('TimeRange', () => {
   test('overlaps() 区間が重なる場合 true', () => {
     const a = new TimeRange(
         new DateTime('2026-01-04T00:00:00.000+09:00'),
-      Duration.fromHours(2) // [00:00, 02:00)
+      new Duration(2) // [00:00, 02:00)
     );
     const b = new TimeRange(
         new DateTime('2026-01-04T01:00:00.000+09:00'),
-      Duration.fromHours(2) // [01:00, 03:00)
+      new Duration(2) // [01:00, 03:00)
     );
 
     expect(a.overlaps(b)).toBeTruthy();
@@ -40,11 +40,11 @@ describe('TimeRange', () => {
   test('overlaps() 境界が接するだけの場合 false', () => {
     const a = new TimeRange(
         new DateTime('2026-01-04T00:00:00.000+09:00'),
-      Duration.fromHours(2) // [00:00, 02:00)
+      new Duration(2) // [00:00, 02:00)
     );
     const b = new TimeRange(
         new DateTime('2026-01-04T02:00:00.000+09:00'),
-      Duration.fromHours(1) // [02:00, 03:00)
+      new Duration(1) // [02:00, 03:00)
     );
 
     expect(a.overlaps(b)).toBeFalsy();
@@ -54,7 +54,7 @@ describe('TimeRange', () => {
   test('contains() start は含む / end は含まない', () => {
     const range = new TimeRange(
         new DateTime('2026-01-04T00:00:00.000+09:00'),
-      Duration.fromHours(2) // [00:00, 02:00)
+      new Duration(2) // [00:00, 02:00)
     );
 
       expect(range.contains(new DateTime('2026-01-04T00:00:00.000+09:00'))).toBeTruthy();
@@ -65,7 +65,7 @@ describe('TimeRange', () => {
   // 異常系
   test('開始時刻が1時間単位でない場合にエラーを投げる', () => {
       const startAt = new DateTime('2026-01-04T00:30:00.000+09:00');
-    const duration = Duration.fromHours(1);
+    const duration = new Duration(1);
 
     expect(() => new TimeRange(startAt, duration)).toThrow(
       'TimeRangeの開始時刻は1時間単位で指定する必要があります'

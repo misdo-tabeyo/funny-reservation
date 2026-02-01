@@ -8,14 +8,14 @@ export type ValidationResult<T> =
 
 export type NearestAvailableSlotsQuery = {
   from?: string;
-  durationMinutes: number;
+  durationHours: number;
   limit?: number;
   searchDays?: number;
 };
 
 export type CheckAvailabilityQuery = {
   startAt: string;
-  durationMinutes: number;
+  durationHours: number;
 };
 
 /**
@@ -60,15 +60,15 @@ export function validateCreateProvisionalBookingCommand(
   const carId = typeof b.carId === 'string' ? b.carId.trim() : '';
   const menuId = typeof b.menuId === 'string' ? b.menuId.trim() : '';
   const startAt = typeof b.startAt === 'string' ? b.startAt.trim() : '';
-  const durationMinutes = typeof b.durationMinutes === 'number' ? b.durationMinutes : NaN;
+  const durationHours = typeof b.durationHours === 'number' ? b.durationHours : NaN;
   const customerName = typeof b.customerName === 'string' ? b.customerName.trim() : '';
   const phoneNumber = typeof b.phoneNumber === 'string' ? b.phoneNumber.trim() : '';
 
   if (!carId) return { ok: false, message: 'carId is required' };
   if (!menuId) return { ok: false, message: 'menuId is required' };
   if (!startAt) return { ok: false, message: 'startAt is required' };
-  if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-    return { ok: false, message: 'durationMinutes must be a positive number' };
+  if (!Number.isFinite(durationHours) || durationHours <= 0) {
+    return { ok: false, message: 'durationHours must be a positive number' };
   }
   if (!customerName) return { ok: false, message: 'customerName is required' };
   if (!phoneNumber) return { ok: false, message: 'phoneNumber is required' };
@@ -85,7 +85,7 @@ export function validateCreateProvisionalBookingCommand(
       carId,
       menuId,
       startAt: normalizedStartAt.value,
-      durationMinutes,
+      durationHours,
       customerName,
       phoneNumber,
     } as CreateProvisionalBookingCommand,
@@ -102,15 +102,15 @@ export function validateNearestAvailableSlotsQuery(
   const q = query as Record<string, unknown>;
 
   const from = typeof q.from === 'string' ? q.from.trim() : undefined;
-  const durationMinutesRaw = q.durationMinutes;
+  const durationHoursRaw = q.durationHours;
   const limitRaw = q.limit;
   const searchDaysRaw = q.searchDays;
 
-  const durationMinutes =
-    typeof durationMinutesRaw === 'string'
-      ? Number(durationMinutesRaw)
-      : typeof durationMinutesRaw === 'number'
-        ? durationMinutesRaw
+  const durationHours =
+    typeof durationHoursRaw === 'string'
+      ? Number(durationHoursRaw)
+      : typeof durationHoursRaw === 'number'
+        ? durationHoursRaw
         : NaN;
 
   const limit =
@@ -135,11 +135,11 @@ export function validateNearestAvailableSlotsQuery(
     return { ok: false, message: 'from must be a valid ISO datetime string' };
   }
 
-  if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-    return { ok: false, message: 'durationMinutes must be a positive number' };
+  if (!Number.isFinite(durationHours) || durationHours <= 0) {
+    return { ok: false, message: 'durationHours must be a positive number' };
   }
-  if (!Number.isInteger(durationMinutes) || durationMinutes < 60 || durationMinutes % 60 !== 0) {
-    return { ok: false, message: 'durationMinutes must be an integer (>=60, multiple of 60)' };
+  if (!Number.isInteger(durationHours) || durationHours < 1) {
+    return { ok: false, message: 'durationHours must be an integer (>=1)' };
   }
 
   if (limit !== undefined) {
@@ -158,7 +158,7 @@ export function validateNearestAvailableSlotsQuery(
     ok: true,
     value: {
       from: normalizedFrom.value,
-      durationMinutes,
+      durationHours,
       limit,
       searchDays,
     },
@@ -173,13 +173,13 @@ export function validateCheckAvailabilityQuery(query: unknown): ValidationResult
   const q = query as Record<string, unknown>;
 
   const startAtRaw = typeof q.startAt === 'string' ? q.startAt.trim() : '';
-  const durationMinutesRaw = q.durationMinutes;
+  const durationHoursRaw = q.durationHours;
 
-  const durationMinutes =
-    typeof durationMinutesRaw === 'string'
-      ? Number(durationMinutesRaw)
-      : typeof durationMinutesRaw === 'number'
-        ? durationMinutesRaw
+  const durationHours =
+    typeof durationHoursRaw === 'string'
+      ? Number(durationHoursRaw)
+      : typeof durationHoursRaw === 'number'
+        ? durationHoursRaw
         : NaN;
 
   if (!startAtRaw) {
@@ -191,18 +191,18 @@ export function validateCheckAvailabilityQuery(query: unknown): ValidationResult
     return { ok: false, message: 'startAt must be a valid ISO datetime string' };
   }
 
-  if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-    return { ok: false, message: 'durationMinutes must be a positive number' };
+  if (!Number.isFinite(durationHours) || durationHours <= 0) {
+    return { ok: false, message: 'durationHours must be a positive number' };
   }
-  if (!Number.isInteger(durationMinutes) || durationMinutes < 60 || durationMinutes % 60 !== 0) {
-    return { ok: false, message: 'durationMinutes must be an integer (>=60, multiple of 60)' };
+  if (!Number.isInteger(durationHours) || durationHours < 1) {
+    return { ok: false, message: 'durationHours must be an integer (>=1)' };
   }
 
   return {
     ok: true,
     value: {
       startAt: normalizedStartAt.value,
-      durationMinutes,
+      durationHours,
     },
   };
 }

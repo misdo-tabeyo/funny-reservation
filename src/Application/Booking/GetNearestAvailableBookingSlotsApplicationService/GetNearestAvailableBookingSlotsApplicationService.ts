@@ -10,7 +10,7 @@ import {
 export type GetNearestAvailableBookingSlotsQuery = {
   /** ISO (YYYY-MM-DDTHH:mm:ss.SSS+09:00) */
   from?: string;
-  durationMinutes: number;
+  durationHours: number;
   /** default: 5 */
   limit?: number;
   /** default: 30 */
@@ -24,7 +24,7 @@ export type AvailableSlot = {
 
 export type GetNearestAvailableBookingSlotsResult = {
   from: string;
-  durationMinutes: number;
+  durationHours: number;
   slots: AvailableSlot[];
 };
 
@@ -46,10 +46,10 @@ export class GetNearestAvailableBookingSlotsApplicationService {
   constructor(private readonly calendarEventQuery: IBookingCalendarEventQuery) {}
 
   async execute(query: GetNearestAvailableBookingSlotsQuery): Promise<GetNearestAvailableBookingSlotsResult> {
-    if (!Number.isFinite(query.durationMinutes)) throw new Error('durationMinutes は必須です');
+    if (!Number.isFinite(query.durationHours)) throw new Error('durationHours は必須です');
 
     // Domainオブジェクトで validate
-    const duration = new Duration(query.durationMinutes);
+    const duration = new Duration(query.durationHours);
 
     const limit = clampInt(query.limit ?? DEFAULT_LIMIT, 1, MAX_LIMIT);
     const searchDays = clampInt(query.searchDays ?? DEFAULT_SEARCH_DAYS, MIN_SEARCH_DAYS, MAX_SEARCH_DAYS);
@@ -105,7 +105,7 @@ export class GetNearestAvailableBookingSlotsApplicationService {
 
     return {
       from: fromAligned.value,
-      durationMinutes: duration.minutes,
+      durationHours: duration.hours,
       slots,
     };
   }

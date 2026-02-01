@@ -35,8 +35,8 @@ export type BookingSlotRuleResult = {
 export class BookingSlotRuleDomainService {
   static readonly BUSINESS_OPEN_HOUR_JST = 10;
   static readonly BUSINESS_CLOSE_HOUR_JST = 18;
-  /** 5時間(=300分)を超える場合は「長時間枠」として扱う */
-  static readonly LONG_DURATION_THRESHOLD_MINUTES = 5 * 60;
+  /** 5時間を超える場合は「長時間枠」として扱う */
+  static readonly LONG_DURATION_THRESHOLD_HOURS = 5;
 
   /**
    * 候補枠が「予約可能な時間帯」か？
@@ -49,7 +49,7 @@ export class BookingSlotRuleDomainService {
     const businessHours = this.isWithinBusinessHours(timeRange);
     if (!businessHours.ok) return businessHours;
 
-    const isLongDuration = timeRange.duration.minutes > this.LONG_DURATION_THRESHOLD_MINUTES;
+    const isLongDuration = timeRange.duration.hours > this.LONG_DURATION_THRESHOLD_HOURS;
 
     // 同日の予約が 1 件以上ある場合
     if (context.existingBookingsCount >= 1) {

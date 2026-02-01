@@ -7,7 +7,7 @@ import { IBookingCalendarEventQuery } from 'Application/Booking/IBookingCalendar
 
 export type CheckBookingEligibilityQuery = {
   startAt: string; // canonical ISO (+09:00 + ms)
-  durationMinutes: number;
+  durationHours: number;
 };
 
 export type BookingEligibilityResult = {
@@ -18,7 +18,7 @@ export type BookingEligibilityResult = {
   normalized?: {
     startAt: string;
     endAt: string;
-    durationMinutes: number;
+    durationHours: number;
   };
 };
 
@@ -38,7 +38,7 @@ export class CheckBookingEligibilityApplicationService {
   async execute(query: CheckBookingEligibilityQuery): Promise<BookingEligibilityResult> {
     // Domainオブジェクトで validate
     const startAt = new DateTime(query.startAt);
-    const duration = new Duration(query.durationMinutes);
+    const duration = new Duration(query.durationHours);
     const timeRange = new TimeRange(startAt, duration);
 
     const jstDayKey = toJstDayKey(timeRange.startAt);
@@ -54,7 +54,7 @@ export class CheckBookingEligibilityApplicationService {
         normalized: {
           startAt: timeRange.startAt.value,
           endAt: timeRange.endAt.value,
-          durationMinutes: timeRange.duration.minutes,
+          durationHours: timeRange.duration.hours,
         },
       };
     }
@@ -71,7 +71,7 @@ export class CheckBookingEligibilityApplicationService {
         normalized: {
           startAt: timeRange.startAt.value,
           endAt: timeRange.endAt.value,
-          durationMinutes: timeRange.duration.minutes,
+          durationHours: timeRange.duration.hours,
         },
       };
     }
@@ -82,7 +82,7 @@ export class CheckBookingEligibilityApplicationService {
       normalized: {
         startAt: timeRange.startAt.value,
         endAt: timeRange.endAt.value,
-        durationMinutes: timeRange.duration.minutes,
+        durationHours: timeRange.duration.hours,
       },
     };
   }

@@ -34,7 +34,7 @@ describe('CheckBookingAvailabilityApplicationService', () => {
 
     const result = await svc.execute({
       startAt: '2026-01-18T10:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
     });
 
     expect(result.bookable).toBe(true);
@@ -49,7 +49,7 @@ describe('CheckBookingAvailabilityApplicationService', () => {
 
     const result = await svc.execute({
       startAt: '2026-01-18T10:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
     });
 
     expect(result.bookable).toBe(false);

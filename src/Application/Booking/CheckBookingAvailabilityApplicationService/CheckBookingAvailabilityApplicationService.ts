@@ -7,7 +7,7 @@ import {
 
 export type CheckBookingAvailabilityQuery = {
   startAt: string; // canonical ISO (Z + ms)
-  durationMinutes: number;
+  durationHours: number;
 };
 
 export type CheckBookingAvailabilityResult = BookingEligibilityResult;

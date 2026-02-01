@@ -8,7 +8,7 @@ export type BookingDTOProps = {
   menuId: string;
   optionIds: string[];
   startAt: string; // ISO
-  durationMinutes: number;
+  durationHours: number;
   priceAmount: number;
   priceCurrency: 'JPY';
   status: string;
@@ -29,7 +29,7 @@ export class BookingDTO {
 
       // DateTime の実装によりけりなので、現状あなたのコードに合わせて value を維持
       startAt: booking.timeRange.startAt.value,
-      durationMinutes: booking.timeRange.duration.minutes,
+      durationHours: booking.timeRange.duration.hours,
 
       // Money は getter があるので getter を使う（安全）
       priceAmount: booking.price.amount,

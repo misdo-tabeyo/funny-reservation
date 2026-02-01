@@ -1,7 +1,7 @@
 export type ProvisionalBookingDTOProps = {
   carId: string;
   startAt: string; // ISO (YYYY-MM-DDTHH:mm:ss.SSSZ)
-  durationMinutes: number;
+  durationHours: number;
   calendarEventId: string; // Google Calendar event id
 };
 

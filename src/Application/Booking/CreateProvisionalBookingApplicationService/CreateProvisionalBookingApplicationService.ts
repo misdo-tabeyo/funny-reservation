@@ -15,7 +15,7 @@ export type CreateProvisionalBookingCommand = {
   carId: string;
   menuId: string;
   startAt: string; // ISO (ミリ秒+09:00必須)
-  durationMinutes: number;
+  durationHours: number;
 
   // 業務必須（仮予約でも必須）
   customerName: string;
@@ -37,7 +37,7 @@ export class CreateProvisionalBookingApplicationService {
     const carId = new CarId(command.carId);
     const menuId = new MenuId(command.menuId);
     const startAt = new DateTime(command.startAt);
-    const duration = new Duration(command.durationMinutes);
+    const duration = new Duration(command.durationHours);
     const timeRange = new TimeRange(startAt, duration);
 
     // 料金表から車種情報とメニュー情報を取得
@@ -55,7 +55,7 @@ export class CreateProvisionalBookingApplicationService {
     if (this.eligibilityService) {
       const eligibility = await this.eligibilityService.execute({
         startAt: startAt.value, // canonical
-        durationMinutes: duration.minutes,
+        durationHours: duration.hours,
       });
 
       if (!eligibility.bookable) {
@@ -95,7 +95,7 @@ export class CreateProvisionalBookingApplicationService {
     return ProvisionalBookingDTO.create({
       carId: command.carId,
       startAt: startAt.value, // canonical
-      durationMinutes: duration.minutes,
+      durationHours: duration.hours,
       calendarEventId: eventId,
     });
   }

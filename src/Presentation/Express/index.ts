@@ -191,7 +191,7 @@ function buildPricingQuery(): GoogleSheetsPricingQuery {
 
 /**
  * 空き確認
- * GET /booking/availability?startAt=...&durationMinutes=60
+ * GET /booking/availability?startAt=...&durationHours=60
  */
 app.get('/booking/availability', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -203,7 +203,7 @@ app.get('/booking/availability', requireAuth, async (req: Request, res: Response
 
     const query: CheckBookingAvailabilityQuery = {
       startAt: validated.value.startAt,
-      durationMinutes: validated.value.durationMinutes,
+      durationHours: validated.value.durationHours,
     };
 
     const calendarEventQuery = buildGoogleCalendarBookingCalendarEventQuery();
@@ -228,7 +228,7 @@ app.get('/booking/availability', requireAuth, async (req: Request, res: Response
 
 /**
  * 直近の予約可能枠を取得
- * GET /booking/available-slots/nearest?carId=...&from=...&durationMinutes=60&limit=5&searchDays=30
+ * GET /booking/available-slots/nearest?carId=...&from=...&durationHours=60&limit=5&searchDays=30
  */
 app.get('/booking/available-slots/nearest', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -240,7 +240,7 @@ app.get('/booking/available-slots/nearest', requireAuth, async (req: Request, re
 
     const query: GetNearestAvailableBookingSlotsQuery = {
       from: validated.value.from,
-      durationMinutes: validated.value.durationMinutes,
+      durationHours: validated.value.durationHours,
       limit: validated.value.limit,
       searchDays: validated.value.searchDays,
     };

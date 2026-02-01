@@ -100,7 +100,7 @@ describe('CreateProvisionalBookingApplicationService', () => {
         carId: 'プリウス',
         menuId: 'front-set',
         startAt: '2026-01-18T09:00:00.000+09:00',
-        durationMinutes: 60,
+        durationHours: 1,
         customerName: '山田太郎',
         phoneNumber: '090-1234-5678',
       }),
@@ -125,7 +125,7 @@ describe('CreateProvisionalBookingApplicationService', () => {
       carId: 'プリウス',
       menuId: 'front-set',
       startAt: '2026-01-18T10:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
       customerName: '山田太郎',
       phoneNumber: '090-1234-5678',
     });
@@ -133,7 +133,7 @@ describe('CreateProvisionalBookingApplicationService', () => {
     expect(dto.toJSON()).toEqual({
       carId: 'プリウス',
       startAt: '2026-01-18T10:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
       calendarEventId: 'event-1',
     });
   });

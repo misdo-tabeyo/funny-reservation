@@ -37,7 +37,7 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
 
     const result = await svc.execute({
       from: from.value,
-      durationMinutes: 60,
+      durationHours: 1,
       limit: 2,
       searchDays: 1,
     });
@@ -60,7 +60,7 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
 
     const result = await svc.execute({
       from: '2026-01-18T17:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
       limit: 3,
       searchDays: 1,
     });
@@ -85,7 +85,7 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
     // from=13:00 だと、13:00/14:00/15:00... は開始時刻制約で落ち、翌日の10:00が最初の候補になる
     const result = await svc.execute({
       from: '2026-01-18T13:00:00.000+09:00',
-      durationMinutes: 360, // 6時間 (>5h)
+      durationHours: 6, // 6時間 (>5h)
       limit: 1,
       searchDays: 2,
     });
@@ -114,7 +114,7 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
 
     const result = await svc.execute({
       from: '2026-01-18T10:00:00.000+09:00',
-      durationMinutes: 360,
+      durationHours: 6,
       limit: 1,
       searchDays: 2,
     });
@@ -144,7 +144,7 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
 
     const result = await svc.execute({
       from: '2026-01-18T10:00:00.000+09:00',
-      durationMinutes: 360,
+      durationHours: 6,
       limit: 1,
       searchDays: 1,
     });
@@ -171,7 +171,7 @@ describe('GetNearestAvailableBookingSlotsApplicationService', () => {
   // その次の 12:00 が返るはず。
     const result = await svc.execute({
       from: '2026-01-18T10:00:00.000+09:00',
-      durationMinutes: 60,
+      durationHours: 1,
       limit: 1,
       searchDays: 1,
     });

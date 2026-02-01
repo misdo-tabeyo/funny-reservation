@@ -47,15 +47,14 @@
             "description": "Start datetime in JST (+09:00 required). Example: 2026-01-18T10:00:00+09:00 or 2026-01-18T10:00:00.000+09:00"
           },
           {
-            "name": "durationMinutes",
+            "name": "durationHours",
             "in": "query",
             "required": true,
             "schema": {
               "type": "integer",
-              "minimum": 60,
-              "multipleOf": 60
+              "minimum": 1
             },
-            "description": "Duration minutes (>=60, multiple of 60)"
+            "description": "Duration in hours (>=1)"
           }
         ],
         "responses": {
@@ -70,7 +69,7 @@
                   "normalized": {
                     "startAt": "2026-01-18T10:00:00.000+09:00",
                     "endAt": "2026-01-18T11:00:00.000+09:00",
-                    "durationMinutes": 60
+                    "durationHours": 1
                   }
                 }
               }
@@ -87,7 +86,7 @@
                   "normalized": {
                     "startAt": "2026-01-18T10:00:00.000+09:00",
                     "endAt": "2026-01-18T11:00:00.000+09:00",
-                    "durationMinutes": 60
+                    "durationHours": 1
                   }
                 }
               }
@@ -197,15 +196,14 @@
             "description": "Search start in JST (+09:00 required). If omitted, server uses now() in JST."
           },
           {
-            "name": "durationMinutes",
+            "name": "durationHours",
             "in": "query",
             "required": true,
             "schema": {
               "type": "integer",
-              "minimum": 60,
-              "multipleOf": 60
+              "minimum": 1
             },
-            "description": "Duration minutes (>=60, multiple of 60)"
+            "description": "Duration in hours (>=1)"
           },
           {
             "name": "limit",
@@ -390,7 +388,7 @@
           },
           "normalized": {
             "type": "object",
-            "required": ["startAt", "endAt", "durationMinutes"],
+            "required": ["startAt", "endAt", "durationHours"],
             "properties": {
               "startAt": {
                 "type": "string",
@@ -404,7 +402,7 @@
                 "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+09:00$",
                 "description": "Canonical JST datetime (YYYY-MM-DDTHH:mm:ss.SSS+09:00)."
               },
-              "durationMinutes": {
+              "durationHours": {
                 "type": "integer",
                 "minimum": 60,
                 "multipleOf": 60
@@ -415,7 +413,7 @@
       },
       "CreateProvisionalBookingCommand": {
         "type": "object",
-        "required": ["carId", "menuId", "startAt", "durationMinutes", "customerName", "phoneNumber"],
+        "required": ["carId", "menuId", "startAt", "durationHours", "customerName", "phoneNumber"],
         "properties": {
           "carId": {
             "type": "string",
@@ -432,7 +430,7 @@
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{3})?)?\\+09:00$",
             "description": "Start datetime in JST (+09:00 required). Server normalizes to canonical JST (YYYY-MM-DDTHH:mm:ss.SSS+09:00)."
           },
-          "durationMinutes": {
+          "durationHours": {
             "type": "integer",
             "minimum": 60,
             "multipleOf": 60
@@ -447,7 +445,7 @@
       },
       "ProvisionalBookingDTO": {
         "type": "object",
-        "required": ["carId", "startAt", "durationMinutes", "calendarEventId"],
+        "required": ["carId", "startAt", "durationHours", "calendarEventId"],
         "properties": {
           "carId": { "type": "string" },
           "startAt": {
@@ -456,7 +454,7 @@
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+09:00$",
             "description": "Canonical JST datetime (YYYY-MM-DDTHH:mm:ss.SSS+09:00). Note: this API always uses +09:00 (JST); it does not use 'Z' (UTC) representation."
           },
-          "durationMinutes": {
+          "durationHours": {
             "type": "integer",
             "minimum": 60,
             "multipleOf": 60
@@ -466,7 +464,7 @@
       },
       "GetNearestAvailableBookingSlotsResult": {
         "type": "object",
-        "required": ["from", "durationMinutes", "slots"],
+        "required": ["from", "durationHours", "slots"],
         "properties": {
           "from": {
             "type": "string",
@@ -474,7 +472,7 @@
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+09:00$",
             "description": "Effective search start in canonical JST datetime (YYYY-MM-DDTHH:mm:ss.SSS+09:00)."
           },
-          "durationMinutes": {
+          "durationHours": {
             "type": "integer",
             "minimum": 60,
             "multipleOf": 60
