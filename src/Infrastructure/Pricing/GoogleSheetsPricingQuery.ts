@@ -25,13 +25,20 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
     CAR_NAME: 1, // B列: 車種名
     CAR_NAME_READING: 2, // C列: 車種読み
     FRONT_SET: 3, // D列: フロントセット
-    FRONT: 4, // E列: フロント
-    FRONT_LEFT_RIGHT: 5, // F列: フロント左右
-    // G列は空列（index 6）
-    REAR_SET: 7, // H列: リアセット
-    REAR_LEFT_RIGHT: 8, // I列: リア左右
-    QUARTER_LEFT_RIGHT: 9, // J列: クォーター左右
-    REAR: 10, // K列: リア
+    // E列: フロントセット施工時間（index 4）
+    FRONT: 5, // F列: フロント
+    // G列: フロント施工時間（index 6）
+    FRONT_LEFT_RIGHT: 7, // H列: フロント左右
+    // I列: フロント左右施工時間（index 8）
+    // J列は空列（index 9）
+    REAR_SET: 10, // K列: リアセット
+    // L列: リアセット施工時間（index 11）
+    REAR_LEFT_RIGHT: 12, // M列: リア左右
+    // N列: リア左右施工時間（index 13）
+    QUARTER_LEFT_RIGHT: 14, // O列: クォーター左右
+    // P列: クォーター施工時間（index 15）
+    REAR: 16, // Q列: リア
+    // R列: リア施工時間（index 17）
   };
 
   // 列インデックス → メニューID のマッピング
@@ -68,7 +75,7 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
 
       const data = await this.client.getValues({
         spreadsheetId: this.spreadsheetId,
-        range: `${sheetName}!A1:K1000`, // A-K列、最大1000行
+        range: `${sheetName}!A1:R1000`, // A-R列、最大1000行
       });
 
       // 3行目以降がデータ（1-2行目はヘッダー）
@@ -93,7 +100,7 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
 
     const data = await this.client.getValues({
       spreadsheetId: this.spreadsheetId,
-      range: `${sheetName}!A1:K1000`,
+      range: `${sheetName}!A1:R1000`,
     });
 
     const cars: CarSummary[] = [];
@@ -208,7 +215,7 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
   private async getPricingsFromSheet(sheetName: string): Promise<CarPricing[]> {
     const data = await this.client.getValues({
       spreadsheetId: this.spreadsheetId,
-      range: `${sheetName}!A1:K1000`,
+      range: `${sheetName}!A1:R1000`,
     });
 
     const pricings: CarPricing[] = [];
