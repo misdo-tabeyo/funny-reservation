@@ -4,7 +4,7 @@ import { CheckBookingEligibilityApplicationService } from 'Application/Booking/C
 import { IBookingCalendarEventRepository } from 'Application/Booking/IBookingCalendarEventRepository';
 import { IBookingSlotAvailabilityQuery } from 'Domain/services/Booking/BookingSlotAvailabilityDomainService/BookingSlotAvailabilityDomainService';
 import { IBookingCalendarEventQuery } from 'Application/Booking/IBookingCalendarEventQuery';
-import { IPricingQuery, CarPricing } from 'Application/Pricing/IPricingQuery';
+import { IPricingQuery, CarDetail } from 'Application/Pricing/IPricingQuery';
 
 class FakeCalendarEventRepository implements IBookingCalendarEventRepository {
   // eslint-disable-next-line @typescript-eslint/require-await
@@ -54,15 +54,15 @@ class FakePricingQuery implements IPricingQuery {
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
-  async findCarPricing(): Promise<CarPricing> {
+  async findCarDetail(): Promise<CarDetail> {
     return {
       carId: 'プリウス',
       carName: 'プリウス',
       carNameReading: 'ぷりうす',
       manufacturer: 'トヨタ',
-      prices: [
-        { menuId: 'front-set', menuName: 'フロントセット', amount: 50000 },
-        { menuId: 'rear-set', menuName: 'リアセット', amount: 60000 },
+      menus: [
+        { menuId: 'front-set', menuName: 'フロントセット', price: 50000 },
+        { menuId: 'rear-set', menuName: 'リアセット', price: 60000 },
       ],
     };
   }
@@ -73,7 +73,7 @@ class FakePricingQuery implements IPricingQuery {
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
-  async listAllCarPricings(): Promise<never[]> {
+  async listAllCarDetails(): Promise<never[]> {
     return [];
   }
 }

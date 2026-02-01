@@ -562,31 +562,31 @@
         "properties": {
           "items": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/CarPricing" }
+            "items": { "$ref": "#/components/schemas/CarDetail" }
           }
         }
       },
-      "CarPricing": {
+      "CarDetail": {
         "type": "object",
-        "required": ["carId", "carName", "carNameReading", "manufacturer", "prices"],
+        "required": ["carId", "carName", "carNameReading", "manufacturer", "menus"],
         "properties": {
           "carId": { "type": "string" },
           "carName": { "type": "string" },
           "carNameReading": { "type": "string" },
           "manufacturer": { "type": "string" },
-          "prices": {
+          "menus": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/CarMenuPrice" }
+            "items": { "$ref": "#/components/schemas/CarMenuItem" }
           }
         }
       },
-      "CarMenuPrice": {
+      "CarMenuItem": {
         "type": "object",
-        "required": ["menuId", "menuName", "amount"],
+        "required": ["menuId", "menuName", "price"],
         "properties": {
           "menuId": { "type": "string" },
           "menuName": { "type": "string" },
-          "amount": { "type": ["integer", "null"] }
+          "price": { "type": ["integer", "null"] }
         }
       }
     }

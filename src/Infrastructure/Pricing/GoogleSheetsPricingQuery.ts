@@ -3,8 +3,8 @@ import {
   IPricingQuery,
   ManufacturerSummary,
   CarSummary,
-  CarPricing,
-  CarMenuPrice,
+  CarDetail,
+  CarMenuItem,
 } from 'Application/Pricing/IPricingQuery';
 import { ManufacturerId } from 'Domain/models/Pricing/ManufacturerId/ManufacturerId';
 import { CarId } from 'Domain/models/Pricing/CarId/CarId';
@@ -151,48 +151,48 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
 
     const normalizedKeyword = keyword.toLocaleLowerCase('ja-JP');
 
-    const allPricings = await this.listAllCarPricings();
+    const allCarDetails = await this.listAllCarDetails();
 
-    const matched = allPricings.filter((p) => {
-      if (params.manufacturerId && p.manufacturer !== params.manufacturerId) return false;
-      const normalizedName = p.carName.toLocaleLowerCase('ja-JP');
+    const matched = allCarDetails.filter((c) => {
+      if (params.manufacturerId && c.manufacturer !== params.manufacturerId) return false;
+      const normalizedName = c.carName.toLocaleLowerCase('ja-JP');
       return normalizedName.includes(normalizedKeyword);
     });
 
     // carId (=carName) の重複があり得るので重複排除
     const uniqueById = new Map<string, CarSummary>();
-    for (const p of matched) {
-      if (uniqueById.has(p.carId)) continue;
-      uniqueById.set(p.carId, {
-        id: p.carId,
-        name: p.carName,
-        nameReading: p.carNameReading,
-        manufacturer: p.manufacturer,
+    for (const c of matched) {
+      if (uniqueById.has(c.carId)) continue;
+      uniqueById.set(c.carId, {
+        id: c.carId,
+        name: c.carName,
+        nameReading: c.carNameReading,
+        manufacturer: c.manufacturer,
       });
     }
 
     return [...uniqueById.values()];
   }
 
-  async findCarPricing(params: { carId: string }): Promise<CarPricing | null> {
-    const allPricings = await this.listAllCarPricings();
-    return allPricings.find((p) => p.carId === params.carId) ?? null;
+  async findCarDetail(params: { carId: string }): Promise<CarDetail | null> {
+    const allCarDetails = await this.listAllCarDetails();
+    return allCarDetails.find((c) => c.carId === params.carId) ?? null;
   }
 
   async findPrice(params: { carId: string; menuId: string }): Promise<number | null> {
-    const pricing = await this.findCarPricing({ carId: params.carId });
-    if (!pricing) return null;
+    const carDetail = await this.findCarDetail({ carId: params.carId });
+    if (!carDetail) return null;
 
-    const menuPrice = pricing.prices.find((p) => p.menuId === params.menuId);
-    return menuPrice?.amount ?? null;
+    const menuItem = carDetail.menus.find((m) => m.menuId === params.menuId);
+    return menuItem?.price ?? null;
   }
 
-  async listAllCarPricings(): Promise<CarPricing[]> {
+  async listAllCarDetails(): Promise<CarDetail[]> {
     const sheetNames = await this.client.listSheetNames({
       spreadsheetId: this.spreadsheetId,
     });
 
-    const allPricings: CarPricing[] = [];
+    const allCarDetails: CarDetail[] = [];
 
     for (const sheetName of sheetNames) {
       // 料金表以外のシートが混ざっても落ちないようにスキップ
@@ -202,23 +202,23 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
         continue;
       }
 
-      const pricings = await this.getPricingsFromSheet(sheetName);
-      allPricings.push(...pricings);
+      const carDetails = await this.getCarDetailsFromSheet(sheetName);
+      allCarDetails.push(...carDetails);
     }
 
-    return allPricings;
+    return allCarDetails;
   }
 
   /**
-   * 指定シートから料金情報を取得
+   * 指定シートから車種詳細情報を取得
    */
-  private async getPricingsFromSheet(sheetName: string): Promise<CarPricing[]> {
+  private async getCarDetailsFromSheet(sheetName: string): Promise<CarDetail[]> {
     const data = await this.client.getValues({
       spreadsheetId: this.spreadsheetId,
       range: `${sheetName}!A1:R1000`,
     });
 
-    const pricings: CarPricing[] = [];
+    const carDetails: CarDetail[] = [];
     let currentManufacturer = sheetName;
 
     for (let i = 2; i < data.values.length; i++) {
@@ -242,31 +242,31 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
 
   const carId = new CarId(carName);
 
-      // メニュー別料金を抽出
-      const prices: CarMenuPrice[] = [];
+      // メニュー別情報を抽出
+      const menus: CarMenuItem[] = [];
       for (const [columnIndex, menuId] of Object.entries(
         GoogleSheetsPricingQuery.COLUMN_TO_MENU_ID,
       )) {
         const menuIdVO = new FilmMenuId(menuId);
-        const amount = this.parsePrice(row, parseInt(columnIndex, 10));
+        const price = this.parsePrice(row, parseInt(columnIndex, 10));
 
-        prices.push({
+        menus.push({
           menuId,
           menuName: menuIdVO.getDisplayName(),
-          amount,
+          price,
         });
       }
 
-      pricings.push({
+      carDetails.push({
         carId: carId.value,
         carName,
         carNameReading: carNameReading || carName,
         manufacturer: currentManufacturer,
-        prices,
+        menus,
       });
     }
 
-    return pricings;
+    return carDetails;
   }
 
   /**

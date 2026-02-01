@@ -39,24 +39,24 @@ export class GetPriceListApplicationService {
     const menuIdVO = new FilmMenuId(menuId);
 
     const resolvedCarId = await this.resolveCarIdFromQuery(carIdVO.value);
-    const pricing = await this.pricingQuery.findCarPricing({ carId: resolvedCarId });
-    if (!pricing) {
+    const carDetail = await this.pricingQuery.findCarDetail({ carId: resolvedCarId });
+    if (!carDetail) {
       throw new Error('指定された車種が見つかりません');
     }
 
-    const menuPrice = pricing.prices.find((p) => p.menuId === menuIdVO.value);
-    if (!menuPrice || menuPrice.amount === null) {
+    const menuItem = carDetail.menus.find((m) => m.menuId === menuIdVO.value);
+    if (!menuItem || menuItem.price === null) {
       throw new Error('指定されたメニューの料金が見つかりません');
     }
 
     return PriceListDTO.createSinglePrice({
-      carId: pricing.carId,
-      carName: pricing.carName,
-      carNameReading: pricing.carNameReading,
-      manufacturer: pricing.manufacturer,
+      carId: carDetail.carId,
+      carName: carDetail.carName,
+      carNameReading: carDetail.carNameReading,
+      manufacturer: carDetail.manufacturer,
       menuId: menuIdVO.value,
       menuName: menuIdVO.getDisplayName(),
-      amount: menuPrice.amount,
+      price: menuItem.price,
     });
   }
 
@@ -68,27 +68,27 @@ export class GetPriceListApplicationService {
     const carIdVO = new CarId(carId);
 
     const resolvedCarId = await this.resolveCarIdFromQuery(carIdVO.value);
-    const pricing = await this.pricingQuery.findCarPricing({ carId: resolvedCarId });
-    if (!pricing) {
+    const carDetail = await this.pricingQuery.findCarDetail({ carId: resolvedCarId });
+    if (!carDetail) {
       throw new Error('指定された車種が見つかりません');
     }
 
     // 料金が設定されているメニューのみ返す
-    const prices = pricing.prices
-      .filter((p) => p.amount !== null)
-      .map((p) => ({
-        menuId: p.menuId,
-        menuName: p.menuName,
-        amount: p.amount,
+    const menus = carDetail.menus
+      .filter((m) => m.price !== null)
+      .map((m) => ({
+        menuId: m.menuId,
+        menuName: m.menuName,
+        price: m.price,
         currency: 'JPY' as const,
       }));
 
     return PriceListDTO.createCarPrices({
-      carId: pricing.carId,
-      carName: pricing.carName,
-      carNameReading: pricing.carNameReading,
-      manufacturer: pricing.manufacturer,
-      prices,
+      carId: carDetail.carId,
+      carName: carDetail.carName,
+      carNameReading: carDetail.carNameReading,
+      manufacturer: carDetail.manufacturer,
+      menus,
     });
   }
 
@@ -96,17 +96,17 @@ export class GetPriceListApplicationService {
    * 全車種の料金表を取得
    */
   private async getAllPrices(): Promise<PriceListDTO> {
-    const allPricings = await this.pricingQuery.listAllCarPricings();
+    const allCarDetails = await this.pricingQuery.listAllCarDetails();
 
-    const pricings: CarPricingDTO[] = allPricings.map((p) => ({
-      carId: p.carId,
-      carName: p.carName,
-      carNameReading: p.carNameReading,
-      manufacturer: p.manufacturer,
-      prices: p.prices.map((price) => ({
-        menuId: price.menuId,
-        menuName: price.menuName,
-        amount: price.amount,
+    const pricings: CarPricingDTO[] = allCarDetails.map((c) => ({
+      carId: c.carId,
+      carName: c.carName,
+      carNameReading: c.carNameReading,
+      manufacturer: c.manufacturer,
+      menus: c.menus.map((menu) => ({
+        menuId: menu.menuId,
+        menuName: menu.menuName,
+        price: menu.price,
         currency: 'JPY' as const,
       })),
     }));

@@ -41,13 +41,13 @@ export class CreateProvisionalBookingApplicationService {
     const timeRange = new TimeRange(startAt, duration);
 
     // 料金表から車種情報とメニュー情報を取得
-    const pricing = await this.pricingQuery.findCarPricing({ carId: carId.value });
-    if (!pricing) {
+    const carDetail = await this.pricingQuery.findCarDetail({ carId: carId.value });
+    if (!carDetail) {
       throw new Error('指定された車種が料金表に存在しません');
     }
 
-    const menuPrice = pricing.prices.find((p) => p.menuId === menuId.value);
-    if (!menuPrice || menuPrice.amount === null) {
+    const menuItem = carDetail.menus.find((m) => m.menuId === menuId.value);
+    if (!menuItem || menuItem.price === null) {
       throw new Error('指定されたメニューが料金表に存在しません');
     }
 
@@ -72,13 +72,13 @@ export class CreateProvisionalBookingApplicationService {
     }
 
     const title = this.buildTitle({
-      carName: pricing.carName,
-      menuName: menuPrice.menuName,
+      carName: carDetail.carName,
+      menuName: menuItem.menuName,
       customerName: command.customerName,
     });
     const description = this.buildDescription({
-      carName: pricing.carName,
-      menuName: menuPrice.menuName,
+      carName: carDetail.carName,
+      menuName: menuItem.menuName,
       customerName: command.customerName,
       phoneNumber: command.phoneNumber,
       channel: command.channel,

@@ -18,23 +18,23 @@ export type CarSummary = {
 };
 
 /**
- * 車種別のメニュー料金
+ * 車種×メニューの情報（Read Model）
  */
-export type CarMenuPrice = {
+export type CarMenuItem = {
   menuId: string; // 例: "front-set"
   menuName: string; // 例: "フロントセット"
-  amount: number | null; // 料金（円）、設定がない場合は null
+  price: number | null; // 料金（円）、設定がない場合は null
 };
 
 /**
- * 車種の料金情報
+ * 車種の詳細情報（Read Model）
  */
-export type CarPricing = {
+export type CarDetail = {
   carId: string;
   carName: string;
   carNameReading: string;
   manufacturer: string;
-  prices: CarMenuPrice[]; // メニュー別料金の配列
+  menus: CarMenuItem[]; // メニュー別情報の配列
 };
 
 /**
@@ -64,11 +64,11 @@ export interface IPricingQuery {
   searchCarsByName(params: { nameContains: string; manufacturerId?: string }): Promise<CarSummary[]>;
 
   /**
-   * 指定車種の料金情報を取得
+   * 指定車種の詳細情報を取得
   * @param params.carId - 車種ID（例: "プリウス"）
-   * @returns 車種の料金情報、見つからない場合は null
+   * @returns 車種の詳細情報、見つからない場合は null
    */
-  findCarPricing(params: { carId: string }): Promise<CarPricing | null>;
+  findCarDetail(params: { carId: string }): Promise<CarDetail | null>;
 
   /**
    * 指定車種・メニューの料金を取得
@@ -79,8 +79,8 @@ export interface IPricingQuery {
   findPrice(params: { carId: string; menuId: string }): Promise<number | null>;
 
   /**
-   * 全車種の料金情報を取得
-   * @returns 全車種の料金情報の配列
+   * 全車種の詳細情報を取得
+   * @returns 全車種の詳細情報の配列
    */
-  listAllCarPricings(): Promise<CarPricing[]>;
+  listAllCarDetails(): Promise<CarDetail[]>;
 }

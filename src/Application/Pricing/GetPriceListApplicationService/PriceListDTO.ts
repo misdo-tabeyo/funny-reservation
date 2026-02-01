@@ -1,7 +1,7 @@
 export type MenuPrice = {
   menuId: string;
   menuName: string;
-  amount: number | null;
+  price: number | null;
   currency: string;
 };
 
@@ -10,7 +10,7 @@ export type CarPricingDTO = {
   carName: string;
   carNameReading: string;
   manufacturer: string;
-  prices: MenuPrice[];
+  menus: MenuPrice[];
 };
 
 export type PriceListDTOProps = {
@@ -44,7 +44,7 @@ export class PriceListDTO {
     manufacturer: string;
     menuId: string;
     menuName: string;
-    amount: number;
+    price: number;
   }): PriceListDTO {
     return new PriceListDTO({
       car: {
@@ -58,7 +58,7 @@ export class PriceListDTO {
         name: params.menuName,
       },
       price: {
-        amount: params.amount,
+        amount: params.price,
         currency: 'JPY',
       },
     });
@@ -72,7 +72,7 @@ export class PriceListDTO {
     carName: string;
     carNameReading: string;
     manufacturer: string;
-    prices: MenuPrice[];
+    menus: MenuPrice[];
   }): PriceListDTO {
     return new PriceListDTO({
       car: {
@@ -89,7 +89,7 @@ export class PriceListDTO {
           carName: params.carName,
           carNameReading: params.carNameReading,
           manufacturer: params.manufacturer,
-          prices: params.prices,
+          menus: params.menus,
         },
       ],
     });
