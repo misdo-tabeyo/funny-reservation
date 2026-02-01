@@ -57,6 +57,7 @@ export class GetPriceListApplicationService {
       menuId: menuIdVO.value,
       menuName: menuIdVO.getDisplayName(),
       price: menuItem.price,
+      durationHours: menuItem.durationHours ?? null,
     });
   }
 
@@ -81,6 +82,7 @@ export class GetPriceListApplicationService {
         menuName: m.menuName,
         price: m.price,
         currency: 'JPY' as const,
+        durationHours: m.durationHours ?? null,
       }));
 
     return PriceListDTO.createCarPrices({
@@ -108,6 +110,7 @@ export class GetPriceListApplicationService {
         menuName: menu.menuName,
         price: menu.price,
         currency: 'JPY' as const,
+        durationHours: menu.durationHours ?? null,
       })),
     }));
 

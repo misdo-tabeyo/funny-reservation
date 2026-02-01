@@ -3,6 +3,8 @@ export type MenuPrice = {
   menuName: string;
   price: number | null;
   currency: string;
+  /** 施工時間（時間）。料金表に無い場合は null/undefined */
+  durationHours?: number | null;
 };
 
 export type CarPricingDTO = {
@@ -23,6 +25,7 @@ export type PriceListDTOProps = {
   menu?: {
     id: string;
     name: string;
+    durationHours?: number | null;
   };
   price?: {
     amount: number;
@@ -45,6 +48,7 @@ export class PriceListDTO {
     menuId: string;
     menuName: string;
     price: number;
+    durationHours?: number | null;
   }): PriceListDTO {
     return new PriceListDTO({
       car: {
@@ -56,6 +60,7 @@ export class PriceListDTO {
       menu: {
         id: params.menuId,
         name: params.menuName,
+        durationHours: params.durationHours ?? null,
       },
       price: {
         amount: params.price,

@@ -404,8 +404,8 @@
               },
               "durationHours": {
                 "type": "integer",
-                "minimum": 60,
-                "multipleOf": 60
+                "minimum": 1,
+                "description": "Duration in hours (>=1)."
               }
             }
           }
@@ -432,8 +432,8 @@
           },
           "durationHours": {
             "type": "integer",
-            "minimum": 60,
-            "multipleOf": 60
+            "minimum": 1,
+            "description": "Duration in hours (>=1)."
           },
           "customerName": { "type": "string" },
           "phoneNumber": { "type": "string" },
@@ -456,8 +456,8 @@
           },
           "durationHours": {
             "type": "integer",
-            "minimum": 60,
-            "multipleOf": 60
+            "minimum": 1,
+            "description": "Duration in hours (>=1)."
           },
           "calendarEventId": { "type": "string" }
         }
@@ -474,8 +474,8 @@
           },
           "durationHours": {
             "type": "integer",
-            "minimum": 60,
-            "multipleOf": 60
+            "minimum": 1,
+            "description": "Duration in hours (>=1)."
           },
           "slots": {
             "type": "array",
@@ -557,16 +557,71 @@
         }
       },
       "PriceListDTO": {
+        "description": "Pricing API response. Shape depends on query: full list / car-only / car+menu.",
+        "oneOf": [
+          { "$ref": "#/components/schemas/PriceListSinglePrice" },
+          { "$ref": "#/components/schemas/PriceListCarPrices" },
+          { "$ref": "#/components/schemas/PriceListFullList" }
+        ]
+      },
+      "PriceListSinglePrice": {
         "type": "object",
-        "required": ["items"],
+        "required": ["car", "menu", "price"],
         "properties": {
-          "items": {
+          "car": { "$ref": "#/components/schemas/PriceListCar" },
+          "menu": { "$ref": "#/components/schemas/PriceListMenu" },
+          "price": { "$ref": "#/components/schemas/PriceListPrice" }
+        }
+      },
+      "PriceListCarPrices": {
+        "type": "object",
+        "required": ["car", "pricings"],
+        "properties": {
+          "car": { "$ref": "#/components/schemas/PriceListCar" },
+          "pricings": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/CarDetail" }
+            "items": { "$ref": "#/components/schemas/CarPricingDTO" }
           }
         }
       },
-      "CarDetail": {
+      "PriceListFullList": {
+        "type": "object",
+        "required": ["pricings"],
+        "properties": {
+          "pricings": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CarPricingDTO" }
+          }
+        }
+      },
+      "PriceListCar": {
+        "type": "object",
+        "required": ["id", "manufacturer", "name", "nameReading"],
+        "properties": {
+          "id": { "type": "string" },
+          "manufacturer": { "type": "string" },
+          "name": { "type": "string" },
+          "nameReading": { "type": "string" }
+        }
+      },
+      "PriceListMenu": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "durationHours": { "type": ["integer", "null"], "minimum": 1 }
+        }
+      },
+      "PriceListPrice": {
+        "type": "object",
+        "required": ["amount", "currency"],
+        "properties": {
+          "amount": { "type": "integer" },
+          "currency": { "type": "string", "enum": ["JPY"] }
+        }
+      },
+      "CarPricingDTO": {
         "type": "object",
         "required": ["carId", "carName", "carNameReading", "manufacturer", "menus"],
         "properties": {
@@ -576,17 +631,19 @@
           "manufacturer": { "type": "string" },
           "menus": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/CarMenuItem" }
+            "items": { "$ref": "#/components/schemas/MenuPrice" }
           }
         }
       },
-      "CarMenuItem": {
+      "MenuPrice": {
         "type": "object",
-        "required": ["menuId", "menuName", "price"],
+        "required": ["menuId", "menuName", "price", "currency"],
         "properties": {
           "menuId": { "type": "string" },
           "menuName": { "type": "string" },
-          "price": { "type": ["integer", "null"] }
+          "price": { "type": ["integer", "null"] },
+          "currency": { "type": "string", "enum": ["JPY"] },
+          "durationHours": { "type": ["integer", "null"], "minimum": 1 }
         }
       }
     }

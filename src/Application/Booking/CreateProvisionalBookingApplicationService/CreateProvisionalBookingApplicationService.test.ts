@@ -61,8 +61,8 @@ class FakePricingQuery implements IPricingQuery {
       carNameReading: 'ぷりうす',
       manufacturer: 'トヨタ',
       menus: [
-        { menuId: 'front-set', menuName: 'フロントセット', price: 50000 },
-        { menuId: 'rear-set', menuName: 'リアセット', price: 60000 },
+        { menuId: 'front-set', menuName: 'フロントセット', price: 50000, durationHours: 2 },
+        { menuId: 'rear-set', menuName: 'リアセット', price: 60000, durationHours: 3 },
       ],
     };
   }
@@ -125,7 +125,7 @@ describe('CreateProvisionalBookingApplicationService', () => {
       carId: 'プリウス',
       menuId: 'front-set',
       startAt: '2026-01-18T10:00:00.000+09:00',
-      durationHours: 1,
+      durationHours: 2,
       customerName: '山田太郎',
       phoneNumber: '090-1234-5678',
     });
@@ -133,8 +133,34 @@ describe('CreateProvisionalBookingApplicationService', () => {
     expect(dto.toJSON()).toEqual({
       carId: 'プリウス',
       startAt: '2026-01-18T10:00:00.000+09:00',
-      durationHours: 1,
+      durationHours: 2,
       calendarEventId: 'event-1',
     });
+  });
+
+  it('料金表に施工時間がある場合、durationHoursが不一致ならエラー', async () => {
+    const availabilityDomainService = new BookingSlotAvailabilityDomainService(new FakeAvailabilityQuery(false));
+    const eligibility = new CheckBookingEligibilityApplicationService(
+      new FakeCalendarEventQuery(0),
+      availabilityDomainService,
+    );
+
+    const svc = new CreateProvisionalBookingApplicationService(
+      availabilityDomainService,
+      new FakeCalendarEventRepository(),
+      new FakePricingQuery(),
+      eligibility,
+    );
+
+    await expect(
+      svc.execute({
+        carId: 'プリウス',
+        menuId: 'front-set',
+        startAt: '2026-01-18T10:00:00.000+09:00',
+        durationHours: 1,
+        customerName: '山田太郎',
+        phoneNumber: '090-1234-5678',
+      }),
+    ).rejects.toThrow('施工時間(durationHours)が料金表の施工時間と一致しません');
   });
 });

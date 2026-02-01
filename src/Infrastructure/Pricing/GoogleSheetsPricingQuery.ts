@@ -25,20 +25,20 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
     CAR_NAME: 1, // B列: 車種名
     CAR_NAME_READING: 2, // C列: 車種読み
     FRONT_SET: 3, // D列: フロントセット
-    // E列: フロントセット施工時間（index 4）
+    FRONT_SET_DURATION: 4, // E列: フロントセット施工時間
     FRONT: 5, // F列: フロント
-    // G列: フロント施工時間（index 6）
+    FRONT_DURATION: 6, // G列: フロント施工時間
     FRONT_LEFT_RIGHT: 7, // H列: フロント左右
-    // I列: フロント左右施工時間（index 8）
+    FRONT_LEFT_RIGHT_DURATION: 8, // I列: フロント左右施工時間
     // J列は空列（index 9）
     REAR_SET: 10, // K列: リアセット
-    // L列: リアセット施工時間（index 11）
+    REAR_SET_DURATION: 11, // L列: リアセット施工時間
     REAR_LEFT_RIGHT: 12, // M列: リア左右
-    // N列: リア左右施工時間（index 13）
+    REAR_LEFT_RIGHT_DURATION: 13, // N列: リア左右施工時間
     QUARTER_LEFT_RIGHT: 14, // O列: クォーター左右
-    // P列: クォーター施工時間（index 15）
+    QUARTER_LEFT_RIGHT_DURATION: 15, // P列: クォーター施工時間
     REAR: 16, // Q列: リア
-    // R列: リア施工時間（index 17）
+    REAR_DURATION: 17, // R列: リア施工時間
   };
 
   // 列インデックス → メニューID のマッピング
@@ -50,6 +50,21 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
     [GoogleSheetsPricingQuery.COLUMN_INDEX.REAR_LEFT_RIGHT]: 'rear-left-right',
     [GoogleSheetsPricingQuery.COLUMN_INDEX.QUARTER_LEFT_RIGHT]: 'quarter-left-right',
     [GoogleSheetsPricingQuery.COLUMN_INDEX.REAR]: 'rear',
+  };
+
+  // 価格列インデックス → 施工時間列インデックス
+  private static readonly PRICE_COLUMN_TO_DURATION_COLUMN: Record<number, number> = {
+    [GoogleSheetsPricingQuery.COLUMN_INDEX.FRONT_SET]:
+      GoogleSheetsPricingQuery.COLUMN_INDEX.FRONT_SET_DURATION,
+    [GoogleSheetsPricingQuery.COLUMN_INDEX.FRONT]: GoogleSheetsPricingQuery.COLUMN_INDEX.FRONT_DURATION,
+    [GoogleSheetsPricingQuery.COLUMN_INDEX.FRONT_LEFT_RIGHT]:
+      GoogleSheetsPricingQuery.COLUMN_INDEX.FRONT_LEFT_RIGHT_DURATION,
+    [GoogleSheetsPricingQuery.COLUMN_INDEX.REAR_SET]: GoogleSheetsPricingQuery.COLUMN_INDEX.REAR_SET_DURATION,
+    [GoogleSheetsPricingQuery.COLUMN_INDEX.REAR_LEFT_RIGHT]:
+      GoogleSheetsPricingQuery.COLUMN_INDEX.REAR_LEFT_RIGHT_DURATION,
+    [GoogleSheetsPricingQuery.COLUMN_INDEX.QUARTER_LEFT_RIGHT]:
+      GoogleSheetsPricingQuery.COLUMN_INDEX.QUARTER_LEFT_RIGHT_DURATION,
+    [GoogleSheetsPricingQuery.COLUMN_INDEX.REAR]: GoogleSheetsPricingQuery.COLUMN_INDEX.REAR_DURATION,
   };
 
   constructor(
@@ -248,12 +263,18 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
         GoogleSheetsPricingQuery.COLUMN_TO_MENU_ID,
       )) {
         const menuIdVO = new FilmMenuId(menuId);
-        const price = this.parsePrice(row, parseInt(columnIndex, 10));
+        const priceColumnIndex = parseInt(columnIndex, 10);
+        const price = this.parsePrice(row, priceColumnIndex);
+
+        const durationColumnIndex =
+          GoogleSheetsPricingQuery.PRICE_COLUMN_TO_DURATION_COLUMN[priceColumnIndex];
+        const durationHours = this.parseDurationHours(row, durationColumnIndex);
 
         menus.push({
           menuId,
           menuName: menuIdVO.getDisplayName(),
           price,
+          durationHours,
         });
       }
 
@@ -287,6 +308,29 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
 
     const num = typeof value === 'number' ? value : parseInt(String(value), 10);
     return Number.isNaN(num) ? null : num;
+  }
+
+  /**
+   * セルの値を施工時間（時間, 整数）としてパース
+   *
+   * 料金表側の運用が揺れても落ちにくいように、以下を許容する:
+   * - "5" -> 5時間
+   * - "300" -> 300分とみなして 5時間（>=24 なら分の可能性が高い）
+   * - "4.5" -> 5時間（予約は1時間単位のため切り上げ）
+   */
+  private parseDurationHours(row: (string | number)[], index: number): number | null {
+    const value = row[index];
+    if (value === null || value === undefined || value === '') return null;
+
+    const raw = typeof value === 'number' ? value : Number(String(value).trim());
+    if (!Number.isFinite(raw) || raw <= 0) return null;
+
+    // 24以上は「分」で入っている可能性が高い（例: 300）ので分として扱う
+    const hours = raw >= 24 ? raw / 60 : raw;
+
+    const ceiled = Math.ceil(hours);
+    if (!Number.isFinite(ceiled) || ceiled < 1) return null;
+    return ceiled;
   }
 
 }

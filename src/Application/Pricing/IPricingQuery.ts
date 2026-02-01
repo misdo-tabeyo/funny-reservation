@@ -24,6 +24,12 @@ export type CarMenuItem = {
   menuId: string; // 例: "front-set"
   menuName: string; // 例: "フロントセット"
   price: number | null; // 料金（円）、設定がない場合は null
+  /**
+   * 施工時間（時間）
+   * - 予約ドメインは 1時間単位のため hours で保持する
+   * - 料金表に未設定/解釈不能な場合は null
+   */
+  durationHours?: number | null;
 };
 
 /**

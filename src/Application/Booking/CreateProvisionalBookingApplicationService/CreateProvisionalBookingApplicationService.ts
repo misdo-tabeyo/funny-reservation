@@ -37,8 +37,9 @@ export class CreateProvisionalBookingApplicationService {
     const carId = new CarId(command.carId);
     const menuId = new MenuId(command.menuId);
     const startAt = new DateTime(command.startAt);
+
+    // API入力の施工時間を正とする（内部で勝手に上書きしない）
     const duration = new Duration(command.durationHours);
-    const timeRange = new TimeRange(startAt, duration);
 
     // 料金表から車種情報とメニュー情報を取得
     const carDetail = await this.pricingQuery.findCarDetail({ carId: carId.value });
@@ -50,6 +51,7 @@ export class CreateProvisionalBookingApplicationService {
     if (!menuItem || menuItem.price === null) {
       throw new Error('指定されたメニューが料金表に存在しません');
     }
+    const timeRange = new TimeRange(startAt, duration);
 
     // 予約可否判定（恒久）。Presentation層が組み立てた場合のみ適用する。
     if (this.eligibilityService) {
@@ -62,6 +64,13 @@ export class CreateProvisionalBookingApplicationService {
         // reasons はUI/ログ向け。ここはメッセージとして連結して返す。
         throw new Error(eligibility.reasons.join(' / ') || '予約できません');
       }
+    }
+
+    // 料金表に施工時間が入っている場合は、不一致を検知する（上書きはしない）
+    if (menuItem.durationHours != null && menuItem.durationHours !== duration.hours) {
+      throw new Error(
+        '施工時間(durationHours)が料金表の施工時間と一致しません。料金表で確認した施工時間を指定してください',
+      );
     }
 
     // 可用性チェック（Googleカレンダーが正）
