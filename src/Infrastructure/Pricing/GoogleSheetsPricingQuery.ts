@@ -1,4 +1,4 @@
-import { IGoogleSheetsClient } from 'Infrastructure/GoogleSheets/IGoogleSheetsClient';
+import { IGoogleSheetsClient, SheetData } from 'Infrastructure/GoogleSheets/IGoogleSheetsClient';
 import {
   IPricingQuery,
   ManufacturerSummary,
@@ -9,6 +9,36 @@ import {
 import { ManufacturerId } from 'Domain/models/Pricing/ManufacturerId/ManufacturerId';
 import { CarId } from 'Domain/models/Pricing/CarId/CarId';
 import { FilmMenuId } from 'Domain/models/Pricing/FilmMenuId/FilmMenuId';
+
+/**
+ * Sheets API 読み取りの短期キャッシュ。
+ *
+ * - 1リクエスト内で listAllCarDetails が複数回呼ばれても実読み取りを1回にする
+ * - GPTの連続呼び出しで Sheets API の分間読み取りクォータに当たるのを防ぐ
+ *   （クォータ超過は 500 として露出していた）
+ * - クエリのインスタンスはリクエスト毎に生成されるため、モジュールスコープで保持する
+ */
+const READ_CACHE_TTL_MS = 60_000;
+const readCache = new Map<string, { promise: Promise<unknown>; expiresAt: number }>();
+
+async function cachedRead<T>(key: string, read: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const hit = readCache.get(key);
+  if (hit && hit.expiresAt > now) {
+    return hit.promise as Promise<T>;
+  }
+
+  const promise = read();
+  readCache.set(key, { promise, expiresAt: now + READ_CACHE_TTL_MS });
+  // 失敗はキャッシュしない（次の呼び出しで再試行させる）
+  promise.catch(() => readCache.delete(key));
+  return promise;
+}
+
+/** テスト用: 読み取りキャッシュを破棄する */
+export function clearPricingReadCache(): void {
+  readCache.clear();
+}
 
 /**
  * Google Sheets から料金情報を取得するクエリ実装
@@ -67,15 +97,48 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
     [GoogleSheetsPricingQuery.COLUMN_INDEX.REAR]: GoogleSheetsPricingQuery.COLUMN_INDEX.REAR_DURATION,
   };
 
+  // ヘッダー行を先頭から探す最大行数
+  private static readonly HEADER_SEARCH_ROWS = 10;
+  // ヘッダー行の車名列に入っているラベル
+  private static readonly HEADER_CAR_NAME_LABEL = '車名';
+
   constructor(
     private readonly client: IGoogleSheetsClient,
     private readonly spreadsheetId: string,
   ) {}
 
+  private listSheetNamesCached(): Promise<string[]> {
+    return cachedRead(`sheets:${this.spreadsheetId}`, () =>
+      this.client.listSheetNames({ spreadsheetId: this.spreadsheetId }),
+    );
+  }
+
+  private getSheetValuesCached(sheetName: string): Promise<SheetData> {
+    const range = `${sheetName}!A1:R1000`; // A-R列、最大1000行
+    return cachedRead(`values:${this.spreadsheetId}:${range}`, () =>
+      this.client.getValues({ spreadsheetId: this.spreadsheetId, range }),
+    );
+  }
+
+  /**
+   * 料金表のヘッダー行（車名列が「車名」の行）を探し、データ開始行のインデックスを返す。
+   *
+   * シートは店舗側で編集されるため、ヘッダーの行位置を固定で仮定しない。
+   * ヘッダーが見つからないシート（表紙・注意書き等）は料金表ではないので null を返す。
+   */
+  private findDataStartIndex(values: (string | number)[][]): number | null {
+    const searchLimit = Math.min(values.length, GoogleSheetsPricingQuery.HEADER_SEARCH_ROWS);
+    for (let i = 0; i < searchLimit; i++) {
+      const carNameCell = this.getCellValue(values[i], GoogleSheetsPricingQuery.COLUMN_INDEX.CAR_NAME);
+      if (carNameCell === GoogleSheetsPricingQuery.HEADER_CAR_NAME_LABEL) {
+        return i + 1;
+      }
+    }
+    return null;
+  }
+
   async listManufacturers(): Promise<ManufacturerSummary[]> {
-    const sheetNames = await this.client.listSheetNames({
-      spreadsheetId: this.spreadsheetId,
-    });
+    const sheetNames = await this.listSheetNamesCached();
 
     const manufacturers: ManufacturerSummary[] = [];
 
@@ -88,13 +151,12 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
         continue;
       }
 
-      const data = await this.client.getValues({
-        spreadsheetId: this.spreadsheetId,
-        range: `${sheetName}!A1:R1000`, // A-R列、最大1000行
-      });
+      const data = await this.getSheetValuesCached(sheetName);
 
-      // 3行目以降がデータ（1-2行目はヘッダー）
-      const dataRows = data.values.slice(2).filter((row) => {
+      const dataStartIndex = this.findDataStartIndex(data.values);
+      if (dataStartIndex === null) continue; // 料金表シートではない（表紙・注意書き等）
+
+      const dataRows = data.values.slice(dataStartIndex).filter((row) => {
         const carName = this.getCellValue(row, GoogleSheetsPricingQuery.COLUMN_INDEX.CAR_NAME);
         return !!carName; // 車種名が存在する行のみカウント
       });
@@ -113,16 +175,29 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
     // manufacturerId はシート名と同値扱い
     const sheetName = params.manufacturerId;
 
-    const data = await this.client.getValues({
-      spreadsheetId: this.spreadsheetId,
-      range: `${sheetName}!A1:R1000`,
-    });
+    // 存在しないシート名だと Sheets API の生エラー（Unable to parse range）が
+    // 500 として露出するため、先にシートの存在を確認して 404 相当のエラーにする
+    const sheetNames = await this.listSheetNamesCached();
+    if (!sheetNames.includes(sheetName)) {
+      throw new Error(
+        `未対応のメーカーです: ${sheetName}。有効なメーカーIDは /pricing/manufacturers で取得できます`,
+      );
+    }
+
+    const data = await this.getSheetValuesCached(sheetName);
+
+    const dataStartIndex = this.findDataStartIndex(data.values);
+    if (dataStartIndex === null) {
+      // シートは存在するが料金表ではない（表紙・注意書き等）
+      throw new Error(
+        `未対応のメーカーです: ${sheetName}。有効なメーカーIDは /pricing/manufacturers で取得できます`,
+      );
+    }
 
     const cars: CarSummary[] = [];
     let currentManufacturer = sheetName; // デフォルトはシート名
 
-    // 3行目以降がデータ
-    for (let i = 2; i < data.values.length; i++) {
+    for (let i = dataStartIndex; i < data.values.length; i++) {
       const row = data.values[i];
 
       // メーカー名セルが空でない場合は更新
@@ -203,9 +278,7 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
   }
 
   async listAllCarDetails(): Promise<CarDetail[]> {
-    const sheetNames = await this.client.listSheetNames({
-      spreadsheetId: this.spreadsheetId,
-    });
+    const sheetNames = await this.listSheetNamesCached();
 
     const allCarDetails: CarDetail[] = [];
 
@@ -228,15 +301,15 @@ export class GoogleSheetsPricingQuery implements IPricingQuery {
    * 指定シートから車種詳細情報を取得
    */
   private async getCarDetailsFromSheet(sheetName: string): Promise<CarDetail[]> {
-    const data = await this.client.getValues({
-      spreadsheetId: this.spreadsheetId,
-      range: `${sheetName}!A1:R1000`,
-    });
+    const data = await this.getSheetValuesCached(sheetName);
+
+    const dataStartIndex = this.findDataStartIndex(data.values);
+    if (dataStartIndex === null) return []; // 料金表シートではない（表紙・注意書き等）
 
     const carDetails: CarDetail[] = [];
     let currentManufacturer = sheetName;
 
-    for (let i = 2; i < data.values.length; i++) {
+    for (let i = dataStartIndex; i < data.values.length; i++) {
       const row = data.values[i];
 
       const manufacturerCell = this.getCellValue(
