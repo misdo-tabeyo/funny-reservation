@@ -333,7 +333,7 @@
             "in": "path",
             "required": true,
             "schema": { "type": "string" },
-            "description": "メーカーID（= シート名）。例: 'トヨタ', 'レクサス'"
+            "description": "メーカーID。/pricing/manufacturers が返す id をそのまま使う（例: '日産'）。カタカナ等の表記ゆれ（例: 'ニッサン'）は 404 になる。"
           }
         ],
         "responses": {
@@ -346,7 +346,7 @@
             }
           },
           "404": {
-            "description": "Not found",
+            "description": "Not found（未対応のメーカーID。有効なIDは /pricing/manufacturers で取得）",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
           },
           "500": {
@@ -360,14 +360,14 @@
       "get": {
         "operationId": "getPriceList",
         "summary": "Get pricing",
-        "description": "料金表を取得します。carId は車名そのもの（例: 'プリウス', 'ヴィッツ(リア3角窓あり)'）です。menuId を指定すると該当メニューのみ返します。",
+        "description": "料金・施工時間を取得します。使い方: (1) carId には車名のみを指定する（型式・年式・グレード・メーカー名は含めない。例: 「ミライース LA350S」なら carId=ミライース）。 (2) menuId を省略すると、その車の全メニューの料金と施工時間(durationHours)が返る。 (3) 400 で candidates が返った場合は車種名が曖昧。candidates から1つ選び、その carId に exact=true を付けて再照会する（exact なしで再照会しない）。 (4) 404 は料金表に載っていない車種。車名を変えて何度も探し直さないこと。",
         "parameters": [
           {
             "name": "carId",
             "in": "query",
             "required": false,
             "schema": { "type": "string" },
-            "description": "車種ID（= 車名そのもの）。日本語・記号を含む場合があります。"
+            "description": "車種ID（= 料金表の車名そのもの）。車名のみを指定し、型式・年式・メーカー名・括弧書きの補足は含めない。日本語・記号を含む場合があります。"
           },
           {
             "name": "menuId",
@@ -378,6 +378,13 @@
               "enum": ["front-set", "front", "front-left-right", "rear-set", "rear-left-right", "quarter-left-right", "rear"]
             },
             "description": "メニューID"
+          },
+          {
+            "name": "exact",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean", "default": false },
+            "description": "true の場合、carId を曖昧解決せず完全一致でのみ照会します。400 の candidates から選んだ carId で再照会するときは必ず true を付けてください。"
           }
         ],
         "responses": {
@@ -386,12 +393,12 @@
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PriceListDTO" } } }
           },
           "404": {
-            "description": "Not found",
+            "description": "Not found（料金表に載っていない車種）",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
           },
           "400": {
-            "description": "Bad request",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+            "description": "車種名が曖昧（candidates から1つ選び exact=true で再照会する）",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AmbiguousCarNameResponse" } } }
           },
           "500": {
             "description": "Server error",
@@ -410,6 +417,30 @@
       }
     },
     "schemas": {
+      "CarNameCandidate": {
+        "type": "object",
+        "required": ["carId", "carName", "manufacturer"],
+        "properties": {
+          "carId": {
+            "type": "string",
+            "description": "この値をそのまま carId に指定し、exact=true を付けて再照会できる"
+          },
+          "carName": { "type": "string" },
+          "manufacturer": { "type": "string" }
+        }
+      },
+      "AmbiguousCarNameResponse": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": { "type": "string" },
+          "candidates": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CarNameCandidate" },
+            "description": "車種名が曖昧だった場合の候補。ここから1つ選んで exact=true で再照会する"
+          }
+        }
+      },
       "BookingEligibilityResult": {
         "type": "object",
         "required": ["bookable", "reasons", "normalized"],

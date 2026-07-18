@@ -36,6 +36,7 @@ import {
 
 import { GoogleSheetsClient } from '../../Infrastructure/GoogleSheets/GoogleSheetsClient';
 import { GoogleSheetsPricingQuery } from '../../Infrastructure/Pricing/GoogleSheetsPricingQuery';
+import { AmbiguousCarNameError } from '../../Application/Pricing/errors';
 
 import path from 'node:path';
 
@@ -320,11 +321,12 @@ app.get('/pricing/prices', async (req: Request, res: Response) => {
     const dto = await applicationService.execute(query);
     res.status(200).json(dto.toJSON());
   } catch (error) {
-    const message = (error as Error).message;
-    if (message.includes('車種名が曖昧')) {
-      res.status(400).json({ message });
+    // 曖昧エラーは、呼び出し側が機械的に再照会できるよう候補を構造化して返す
+    if (error instanceof AmbiguousCarNameError) {
+      res.status(400).json({ message: error.message, candidates: error.candidates });
       return;
     }
+    const message = (error as Error).message;
     if (message.includes('見つかりません')) {
       res.status(404).json({ message });
       return;

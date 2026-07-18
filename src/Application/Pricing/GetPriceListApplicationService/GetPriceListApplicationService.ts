@@ -1,4 +1,5 @@
 import { IPricingQuery } from '../IPricingQuery';
+import { AmbiguousCarNameError } from '../errors';
 import { PriceListDTO, CarPricingDTO } from './PriceListDTO';
 import { CarId } from 'Domain/models/Pricing/CarId/CarId';
 import { FilmMenuId } from 'Domain/models/Pricing/FilmMenuId/FilmMenuId';
@@ -6,6 +7,11 @@ import { FilmMenuId } from 'Domain/models/Pricing/FilmMenuId/FilmMenuId';
 export type GetPriceListQuery = {
   carId?: string;
   menuId?: string;
+  /**
+   * true の場合、carId を曖昧解決せず完全一致でのみ照会する。
+   * AmbiguousCarNameError の candidates から選んだ carId での再照会に使う。
+   */
+  exact?: boolean;
 };
 
 /**
@@ -16,14 +22,16 @@ export class GetPriceListApplicationService {
   constructor(private readonly pricingQuery: IPricingQuery) {}
 
   async execute(query: GetPriceListQuery): Promise<PriceListDTO> {
+    const exact = query.exact ?? false;
+
     // パターンC: 車種＋メニュー指定
     if (query.carId && query.menuId) {
-      return this.getSinglePrice(query.carId, query.menuId);
+      return this.getSinglePrice(query.carId, query.menuId, exact);
     }
 
     // パターンB: 車種指定のみ
     if (query.carId) {
-      return this.getCarPrices(query.carId);
+      return this.getCarPrices(query.carId, exact);
     }
 
     // パターンA: 全料金表
@@ -33,12 +41,12 @@ export class GetPriceListApplicationService {
   /**
    * 特定の車種・メニューの料金を取得
    */
-  private async getSinglePrice(carId: string, menuId: string): Promise<PriceListDTO> {
+  private async getSinglePrice(carId: string, menuId: string, exact: boolean): Promise<PriceListDTO> {
     // バリデーション
     const carIdVO = new CarId(carId);
     const menuIdVO = new FilmMenuId(menuId);
 
-    const resolvedCarId = await this.resolveCarIdFromQuery(carIdVO.value);
+    const resolvedCarId = exact ? carIdVO.value : await this.resolveCarIdFromQuery(carIdVO.value);
     const carDetail = await this.pricingQuery.findCarDetail({ carId: resolvedCarId });
     if (!carDetail) {
       throw new Error('指定された車種が見つかりません');
@@ -64,11 +72,11 @@ export class GetPriceListApplicationService {
   /**
    * 特定の車種の全メニュー料金を取得
    */
-  private async getCarPrices(carId: string): Promise<PriceListDTO> {
+  private async getCarPrices(carId: string, exact: boolean): Promise<PriceListDTO> {
     // バリデーション
     const carIdVO = new CarId(carId);
 
-    const resolvedCarId = await this.resolveCarIdFromQuery(carIdVO.value);
+    const resolvedCarId = exact ? carIdVO.value : await this.resolveCarIdFromQuery(carIdVO.value);
     const carDetail = await this.pricingQuery.findCarDetail({ carId: resolvedCarId });
     if (!carDetail) {
       throw new Error('指定された車種が見つかりません');
@@ -121,7 +129,9 @@ export class GetPriceListApplicationService {
    * carId(=車名) を解決する。
    *
    * - 入力に対して部分一致検索し、候補が複数件なら曖昧すぎるのでエラー
-   *   （その中に完全一致が含まれていても「他にも候補がある」なら曖昧扱いにする）
+   *   （その中に完全一致が含まれていても「他にも候補がある」なら曖昧扱いにする。
+   *     お客様の年式違い等を確認せずに料金を答えないための業務ルール）
+   * - 曖昧エラーには、exact=true でそのまま再照会できる候補一覧を含める
    * - 候補が1件ならそれを採用
    * - 候補が0件なら解決不能として、そのまま入力を返す
    */
@@ -133,15 +143,13 @@ export class GetPriceListApplicationService {
 
     if (candidates.length === 1) return candidates[0].id;
 
-    if (candidates.length > 1) {
-      const names = candidates
-        .slice(0, 10)
-        .map((c) => `${c.name}(${c.manufacturer})`)
-        .join(', ');
-      throw new Error(`車種名が曖昧です。候補: ${names}`);
-    }
-
-    // 上の分岐で必ず return / throw するが、型のために明示しておく
-    return input;
+    throw new AmbiguousCarNameError(
+      input,
+      candidates.slice(0, 10).map((c) => ({
+        carId: c.id,
+        carName: c.name,
+        manufacturer: c.manufacturer,
+      })),
+    );
   }
 }

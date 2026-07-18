@@ -1,4 +1,5 @@
 import { GetPriceListApplicationService } from './GetPriceListApplicationService';
+import { AmbiguousCarNameError } from '../errors';
 import { IPricingQuery, CarDetail, CarSummary, ManufacturerSummary } from '../IPricingQuery';
 
 class FakePricingQuery implements IPricingQuery {
@@ -87,5 +88,43 @@ describe('GetPriceListApplicationService (fuzzy carId)', () => {
 
     const service = new GetPriceListApplicationService(query);
     await expect(service.execute({ carId: 'プリ' })).rejects.toThrow('車種名が曖昧');
+  });
+
+  test('ambiguous error carries machine-usable candidates (carId usable with exact=true)', async () => {
+    const query = new FakePricingQuery([
+      baseCarDetail('プリウス', 'プリウス', 'トヨタ'),
+      baseCarDetail('プリウスα', 'プリウスα', 'トヨタ'),
+    ]);
+
+    const service = new GetPriceListApplicationService(query);
+
+    const error = await service.execute({ carId: 'プリウス' }).catch((e) => e);
+    expect(error).toBeInstanceOf(AmbiguousCarNameError);
+    expect((error as AmbiguousCarNameError).candidates).toEqual([
+      { carId: 'プリウス', carName: 'プリウス', manufacturer: 'トヨタ' },
+      { carId: 'プリウスα', carName: 'プリウスα', manufacturer: 'トヨタ' },
+    ]);
+  });
+
+  test('exact=true skips fuzzy resolution and returns the exact car', async () => {
+    const query = new FakePricingQuery([
+      baseCarDetail('プリウス', 'プリウス', 'トヨタ'),
+      baseCarDetail('プリウスα', 'プリウスα', 'トヨタ'),
+    ]);
+
+    const service = new GetPriceListApplicationService(query);
+
+    const dto = await service.execute({ carId: 'プリウス', exact: true });
+    expect(dto.toJSON().car?.id).toBe('プリウス');
+
+    const single = await service.execute({ carId: 'プリウス', menuId: 'front-set', exact: true });
+    expect(single.toJSON().price?.amount).toBe(1000);
+  });
+
+  test('exact=true with an unknown carId throws not-found', async () => {
+    const query = new FakePricingQuery([baseCarDetail('プリウス', 'プリウス', 'トヨタ')]);
+
+    const service = new GetPriceListApplicationService(query);
+    await expect(service.execute({ carId: 'プリ', exact: true })).rejects.toThrow('見つかりません');
   });
 });

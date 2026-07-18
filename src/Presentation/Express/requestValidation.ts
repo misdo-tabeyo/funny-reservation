@@ -221,11 +221,15 @@ export function validateGetPriceListQuery(query: unknown): ValidationResult<GetP
   const validCarId = carId && carId.length > 0 ? carId : undefined;
   const validMenuId = menuId && menuId.length > 0 ? menuId : undefined;
 
+  // exact はクエリ文字列なので "true" / true のみを true とみなす
+  const exact = q.exact === true || q.exact === 'true';
+
   return {
     ok: true,
     value: {
       carId: validCarId,
       menuId: validMenuId,
+      exact,
     },
   };
 }
