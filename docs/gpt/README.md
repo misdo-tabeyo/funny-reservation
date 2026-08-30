@@ -5,6 +5,8 @@ ChatGPTのGPT「カーフィルムファニー 問い合わせ返信サポート
 ## ファイル
 
 - `system-prompt.md` — GPTのInstructions(システムプロンプト)。**このファイルが原本**
+  - ChatGPTのInstructionsは**8000文字以内**の制限があるため、それを超えないよう維持する
+    (確認: `node -e "console.log([...require('fs').readFileSync('docs/gpt/system-prompt.md','utf8')].length)"`)
 - Actions のスキーマは本番の `https://funny-reservation-ghv4mlyezq-an.a.run.app/openapi` を参照
   (原本は `src/Presentation/Express/public/openapi.json`)
 
