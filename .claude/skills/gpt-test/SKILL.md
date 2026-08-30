@@ -43,6 +43,9 @@ description: GPTプロンプト(docs/gpt/system-prompt.md)の返信生成をサ�
   curl -sS --get --data-urlencode "startAt=YYYY-MM-DDTHH:00:00+09:00" --data-urlencode "durationHours=数値" "$BASE/booking/availability"
 - getNearestAvailableBookingSlots:
   curl -sS --get --data-urlencode "from=YYYY-MM-DDTHH:00:00+09:00" --data-urlencode "durationHours=数値" --data-urlencode "limit=数値" --data-urlencode "searchDays=数値" "$BASE/booking/available-slots/nearest"
+- listCarsByManufacturer（404時の表記揺れ照合にのみ使用）:
+  curl -sS "$BASE/pricing/manufacturers/メーカー名/cars"
+  （パスに日本語をそのまま書いてよい）
 
 POST系（予約作成）は絶対に呼ばないこと。上記以外のエンドポイントも呼ばないこと。
 
