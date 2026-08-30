@@ -40,9 +40,9 @@ description: GPTプロンプト(docs/gpt/system-prompt.md)の返信生成をサ�
   curl -sS --get --data-urlencode "carId=車名" "$BASE/pricing/prices"
   （exact指定時は --data-urlencode "exact=true" を追加）
 - checkBookingAvailability:
-  curl -sS --get --data-urlencode "startAt=YYYY-MM-DDTHH:00:00+09:00" --data-urlencode "durationHours=数値" "$BASE/booking/availability"
+  curl -sS -H "Authorization: Bearer $FUNNY_API_TOKEN" --get --data-urlencode "startAt=YYYY-MM-DDTHH:00:00+09:00" --data-urlencode "durationHours=数値" "$BASE/booking/availability"
 - getNearestAvailableBookingSlots:
-  curl -sS --get --data-urlencode "from=YYYY-MM-DDTHH:00:00+09:00" --data-urlencode "durationHours=数値" --data-urlencode "limit=数値" --data-urlencode "searchDays=数値" "$BASE/booking/available-slots/nearest"
+  curl -sS -H "Authorization: Bearer $FUNNY_API_TOKEN" --get --data-urlencode "from=YYYY-MM-DDTHH:00:00+09:00" --data-urlencode "durationHours=数値" --data-urlencode "limit=数値" --data-urlencode "searchDays=数値" "$BASE/booking/available-slots/nearest"
 - listCarsByManufacturer（404時の表記揺れ照合にのみ使用）:
   curl -sS "$BASE/pricing/manufacturers/メーカー名/cars"
   （パスに日本語をそのまま書いてよい）
@@ -66,5 +66,11 @@ POST系（予約作成）は絶対に呼ばないこと。上記以外のエン�
 
 ## 注意
 
+- **予約系API(booking/*)はBearer認証必須。** テスト実行前に環境変数 `FUNNY_API_TOKEN`
+  (本番の `API_TOKEN` と同じ値)が設定されているか `test -n "$FUNNY_API_TOKEN"` で確認する。
+  未設定の場合はその旨をユーザーに伝え、料金部分のみのテストになると断ったうえで実行する
+  (サブエージェントには「空き状況APIは401になるため呼ばず、ご予約可能日程欄は
+  『※空き状況はテスト環境では確認できませんでした』と書く」よう指示する)
+- トークンをリポジトリにコミットしない
 - 空き状況は本番カレンダー依存のため、実行日によって結果が変わる
 - 新しいサンプルを保存するときは実名・電話番号を匿名化する(リポジトリはpublic)
