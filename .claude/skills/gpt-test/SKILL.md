@@ -40,12 +40,17 @@ description: GPTプロンプト(docs/gpt/system-prompt.md)の返信生成をサ�
   curl -sS --get --data-urlencode "carId=車名" "$BASE/pricing/prices"
   （exact指定時は --data-urlencode "exact=true" を追加）
 - checkBookingAvailability:
-  curl -sS -H "Authorization: Bearer $FUNNY_API_TOKEN" --get --data-urlencode "startAt=YYYY-MM-DDTHH:00:00+09:00" --data-urlencode "durationHours=数値" "$BASE/booking/availability"
+  curl -sS -H "Authorization: Bearer $TOKEN" --get --data-urlencode "startAt=YYYY-MM-DDTHH:00:00+09:00" --data-urlencode "durationHours=数値" "$BASE/booking/availability"
 - getNearestAvailableBookingSlots:
-  curl -sS -H "Authorization: Bearer $FUNNY_API_TOKEN" --get --data-urlencode "from=YYYY-MM-DDTHH:00:00+09:00" --data-urlencode "durationHours=数値" --data-urlencode "limit=数値" --data-urlencode "searchDays=数値" "$BASE/booking/available-slots/nearest"
+  curl -sS -H "Authorization: Bearer $TOKEN" --get --data-urlencode "from=YYYY-MM-DDTHH:00:00+09:00" --data-urlencode "durationHours=数値" --data-urlencode "limit=数値" --data-urlencode "searchDays=数値" "$BASE/booking/available-slots/nearest"
 - listCarsByManufacturer（404時の表記揺れ照合にのみ使用）:
   curl -sS "$BASE/pricing/manufacturers/メーカー名/cars"
   （パスに日本語をそのまま書いてよい）
+
+予約系API（booking/*）のBearerトークンは、各curlコマンドの冒頭で毎回次のように取得すること（Bashのシェル状態はコマンド間で持続しないため）:
+TOKEN=$(grep '^API_TOKEN=' {リポジトリ絶対パス}/.env | head -1 | cut -d= -f2- | sed 's/^"//; s/"$//'); curl -sS -H "Authorization: Bearer $TOKEN" ...
+
+【厳守】.env の内容・トークン値を echo / cat 等で表示・出力してはならない。最終出力・途中経過にも一切含めないこと。
 
 POST系（予約作成）は絶対に呼ばないこと。上記以外のエンドポイントも呼ばないこと。
 
@@ -66,9 +71,10 @@ POST系（予約作成）は絶対に呼ばないこと。上記以外のエン�
 
 ## 注意
 
-- **予約系API(booking/*)はBearer認証必須。** テスト実行前に環境変数 `FUNNY_API_TOKEN`
-  (本番の `API_TOKEN` と同じ値)が設定されているか `test -n "$FUNNY_API_TOKEN"` で確認する。
-  未設定の場合はその旨をユーザーに伝え、料金部分のみのテストになると断ったうえで実行する
+- **予約系API(booking/*)はBearer認証必須。** トークンはリポジトリ直下の `.env` の `API_TOKEN` を使う。
+  テスト実行前に `test -f .env && grep -qE '^API_TOKEN=' .env` でエントリの存在だけ確認する
+  (**自分でもサブエージェントでも .env の中身・トークン値を表示・出力しないこと**)。
+  .env にエントリがない場合はその旨をユーザーに伝え、料金部分のみのテストになると断ったうえで実行する
   (サブエージェントには「空き状況APIは401になるため呼ばず、ご予約可能日程欄は
   『※空き状況はテスト環境では確認できませんでした』と書く」よう指示する)
 - トークンをリポジトリにコミットしない
