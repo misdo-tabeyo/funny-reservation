@@ -1,6 +1,7 @@
 import {
   validateCheckAvailabilityQuery,
   validateCreateProvisionalBookingCommand,
+  validateGetPriceListQuery,
   validateNearestAvailableSlotsQuery,
 } from './requestValidation';
 
@@ -161,5 +162,70 @@ describe('validateCheckAvailabilityQuery', () => {
       ok: false,
       message: 'durationHours must be an integer (>=1)',
     });
+  });
+});
+
+describe('validateGetPriceListQuery', () => {
+  it('carId / menuId を trim して返し、exact 未指定は false', () => {
+    const result = validateGetPriceListQuery({ carId: ' アテンザ ', menuId: 'rear-set' });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.carId).toBe('アテンザ');
+    expect(result.value.menuId).toBe('rear-set');
+    expect(result.value.exact).toBe(false);
+  });
+
+  it('空文字の carId / menuId は未指定として扱う', () => {
+    const result = validateGetPriceListQuery({ carId: '  ', menuId: '' });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.carId).toBeUndefined();
+    expect(result.value.menuId).toBeUndefined();
+  });
+
+  // GPT等のクライアントは boolean のシリアライズが揺れるため、
+  // 一般的な真偽値表記はすべて同じ意味に解釈する
+  it.each(['true', 'True', 'TRUE', ' true ', '1', 'yes', 'on', true, ['true', 'true']])(
+    'exact=%p を true として解釈する',
+    (exact) => {
+      const result = validateGetPriceListQuery({ carId: 'アテンザ', exact });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.exact).toBe(true);
+    },
+  );
+
+  it.each(['false', 'False', '0', 'no', 'off', '', false, undefined])(
+    'exact=%p を false として解釈する',
+    (exact) => {
+      const result = validateGetPriceListQuery({ carId: 'アテンザ', exact });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.value.exact).toBe(false);
+    },
+  );
+
+  // 黙って false に倒すと、呼び出し側からは「付け忘れ」と区別できず
+  // 同じ曖昧エラーを繰り返すことになるため、明示的にエラーにする
+  it.each(['maybe', '2', 'ture', 123, ['true', 'false']])(
+    'exact=%p は解釈できないのでエラーにする',
+    (exact) => {
+      const result = validateGetPriceListQuery({ carId: 'アテンザ', exact });
+
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.message).toContain('exact');
+    },
+  );
+
+  it('クエリがオブジェクトでなければエラー', () => {
+    expect(validateGetPriceListQuery(null).ok).toBe(false);
+    expect(validateGetPriceListQuery('carId=アテンザ').ok).toBe(false);
   });
 });

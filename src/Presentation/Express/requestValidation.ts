@@ -18,6 +18,11 @@ export type CheckAvailabilityQuery = {
   durationHours: number;
 };
 
+/** クエリ文字列で true とみなす表記（大文字小文字は無視） */
+const TRUTHY_FLAG_VALUES = ['true', '1', 'yes', 'on'];
+/** クエリ文字列で false とみなす表記（大文字小文字は無視） */
+const FALSY_FLAG_VALUES = ['false', '0', 'no', 'off'];
+
 /**
  * API入力の日時は JST(+09:00) 前提で扱う。
  * - 入力: +09:00 必須（Z/UTCは許容しない）
@@ -207,6 +212,49 @@ export function validateCheckAvailabilityQuery(query: unknown): ValidationResult
   };
 }
 
+/**
+ * クエリ文字列の真偽値フラグを解釈する。
+ *
+ * 呼び出し元はGPT等のHTTPクライアントで、boolean のシリアライズが揺れる
+ * （"True"（Python流）・"1"・同名パラメータの重複で配列になる 等）。
+ * 未知の表記を黙って false に倒すと「フラグを付けたのに効かない」状態になり、
+ * 呼び出し側からは付け忘れと区別できないため、
+ * - 一般的な真偽値表記は受け付ける
+ * - 解釈できない値は明示的にバリデーションエラーにする
+ */
+function parseBooleanFlag(raw: unknown): ValidationResult<boolean> {
+  // 未指定
+  if (raw === undefined || raw === null || raw === '') {
+    return { ok: true, value: false };
+  }
+
+  if (typeof raw === 'boolean') {
+    return { ok: true, value: raw };
+  }
+
+  // 同名パラメータが複数回付いた場合は配列になる（値が揃っていれば受け付ける）
+  if (Array.isArray(raw)) {
+    const parsed = raw.map((v) => parseBooleanFlag(v));
+    const invalid = parsed.find((r) => !r.ok);
+    if (invalid && !invalid.ok) return invalid;
+    const values = parsed.map((r) => (r.ok ? r.value : false));
+    if (values.some((v) => v !== values[0])) {
+      return { ok: false, message: 'has conflicting values' };
+    }
+    return { ok: true, value: values[0] ?? false };
+  }
+
+  if (typeof raw !== 'string') {
+    return { ok: false, message: 'must be true or false' };
+  }
+
+  const normalized = raw.trim().toLowerCase();
+  if (TRUTHY_FLAG_VALUES.includes(normalized)) return { ok: true, value: true };
+  if (FALSY_FLAG_VALUES.includes(normalized)) return { ok: true, value: false };
+
+  return { ok: false, message: 'must be true or false' };
+}
+
 export function validateGetPriceListQuery(query: unknown): ValidationResult<GetPriceListQuery> {
   if (!query || typeof query !== 'object') {
     return { ok: false, message: 'Invalid query' };
@@ -221,15 +269,17 @@ export function validateGetPriceListQuery(query: unknown): ValidationResult<GetP
   const validCarId = carId && carId.length > 0 ? carId : undefined;
   const validMenuId = menuId && menuId.length > 0 ? menuId : undefined;
 
-  // exact はクエリ文字列なので "true" / true のみを true とみなす
-  const exact = q.exact === true || q.exact === 'true';
+  const exact = parseBooleanFlag(q.exact);
+  if (!exact.ok) {
+    return { ok: false, message: `exact ${exact.message}` };
+  }
 
   return {
     ok: true,
     value: {
       carId: validCarId,
       menuId: validMenuId,
-      exact,
+      exact: exact.value,
     },
   };
 }
