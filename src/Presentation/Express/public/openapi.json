@@ -383,8 +383,8 @@
             "name": "exact",
             "in": "query",
             "required": false,
-            "schema": { "type": "boolean", "default": false },
-            "description": "true の場合、carId を曖昧解決せず完全一致でのみ照会します。400 の candidates から選んだ carId で再照会するときは必ず true を付けてください。"
+            "schema": { "type": "string", "enum": ["true", "false"] },
+            "description": "文字列 \"true\" を指定すると、carId を曖昧解決せず完全一致でのみ照会します。400 の candidates から選んだ carId で再照会するときは必ず exact=true を付けてください（\"True\"・1 等の表記も受け付けますが、解釈できない値は 400 になります）。"
           }
         ],
         "responses": {
